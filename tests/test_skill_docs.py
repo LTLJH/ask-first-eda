@@ -440,7 +440,8 @@ def test_skill_omits_audit_warning_handling(skill_doc):
 
 
 def test_skill_word_limit(skill_doc):
-    assert len(skill_doc.split()) < 3385
+    words_before_question_policy = 3332
+    assert len(skill_doc.split()) < words_before_question_policy
 
 
 def test_clean_step_says_to_neutralize_and_report_formula_cells(skill_doc):
@@ -477,13 +478,10 @@ def test_skill_documents_reusing_a_previous_analysis(skill_doc):
     ), "Reuse must mention clean.py and the rule against running it in the same sentence"
 
 
-def test_reuse_documents_recorded_zero_for_each_affected_column(skill_doc):
+def test_reuse_applies_shared_rules_to_new_values(skill_doc):
     _, section = skill_section(skill_doc, "Reuse a previous analysis")
-    assert any(
-        re.search(r"\beach\s+affected\s+column\b", sentence, re.I)
-        and re.search(r"\brecorded\s+zero\b", sentence, re.I)
-        for sentence in markdown_sentences(section)
-    ), "Reuse must mention each affected column and recorded zero in the same sentence"
+    for term in ("new value", "shared rule", "recorded zero", "denominator"):
+        assert term in section.casefold()
 
 
 def test_methods_documents_same_population_for_numerator_and_denominator():
@@ -544,6 +542,44 @@ def test_skill_documents_after_delivery(skill_doc):
 def test_step_2_names_items_under_review(skill_doc):
     _, section = skill_section(skill_doc, "Step 2", allow_suffix=True)
     assert re.search(r"\bitems\s+under\s+review\b", section, re.I), "Step 2 must mention items under review"
+
+
+@pytest.mark.parametrize("path", [
+    SKILL_DIR / "SKILL.md", SKILL_DIR / "references" / "interview.md", REQUIREMENTS,
+])
+def test_question_policy_omits_superseded_instructions(path):
+    document = " ".join(path.read_text(encoding="utf-8").casefold().split())
+    for phrase in (
+        "even after", "one change per turn", "three to six questions", "cover all eight items",
+        "continue with any unasked open item", "audit all eight entries",
+        "stop normally when all items are settled", "stop when every item has a status",
+    ):
+        assert phrase not in document
+
+
+def test_interview_questions_depend_on_impact(skill_doc):
+    _, section = skill_section(skill_doc, "Step 2", allow_suffix=True)
+    sentences = markdown_sentences(section.casefold())
+    assert any(all(term in s for term in ("only", "unresolved definition", "result", "decision"))
+               for s in sentences)
+    assert any(all(term in s for term in ("record", "unresolved", "proceed")) for s in sentences)
+    assert any(all(term in s for term in ("internal", "eight", "ambiguity log")) for s in sentences)
+
+
+def test_interview_groups_shared_rules(skill_doc):
+    _, section = skill_section(skill_doc, "Step 2", allow_suffix=True)
+    for term in ("rows", "columns", "ask once", "scope", "exceptions", "unresolved"):
+        assert term in section.casefold()
+
+
+def test_first_turn_and_deferred_results(skill_doc):
+    _, first = skill_section(skill_doc, "Step 1", allow_suffix=True)
+    for term in ("immediately", "settled", "compute", "code-verified candidate values", "unit", "ask"):
+        assert term in first.casefold()
+    guide = (SKILL_DIR / "references" / "interview.md").read_text(encoding="utf-8").casefold()
+    for term in ("defer", "unresolved id and condition", "settled value unconditional",
+                 "withhold", "inputs cannot be verified"):
+        assert term in guide
 
 
 def test_step_2_documents_keeping_ambiguity_log_without_a_file(skill_doc):
@@ -816,13 +852,19 @@ def test_cleaning_reference_lists_duplicate_and_implausible_patterns():
     )
 
 
-def test_clean_step_names_duplicate_and_implausible_changes_for_confirmation(skill_doc):
-    heading = re.search(r"^(#{1,6})[ \t]+(?:Step\b[^\n]*\b)?Clean\b[^\n]*$", skill_doc, re.M)
-    assert heading, "SKILL.md must have a Clean step heading"
-    level = len(heading.group(1))
-    section = re.split(rf"^#{{1,{level}}}[ \t]+", skill_doc[heading.end() :], maxsplit=1, flags=re.M)[0]
-    missing = [keyword for keyword in ("duplicate", "implausible") if not re.search(rf"\b{keyword}\b", section, re.I)]
-    assert not missing, f"Clean step must name result-changing cases for separate confirmation: {', '.join(missing)}"
+def test_clean_step_itemizes_result_changing_actions(skill_doc):
+    _, section = skill_section(skill_doc, "Step 3", allow_suffix=True)
+    plan = section.casefold().split("perform confirmed cleaning")[0]
+    for term in ("numbered", "each", "unit conversion", "`-`", "`n/a`", "subtotal", "total",
+                 "duplicate", "implausible", "category"):
+        assert term in plan
+
+
+def test_clean_step_honors_approval_of_list(skill_doc):
+    _, section = skill_section(skill_doc, "Step 3", allow_suffix=True)
+    sentences = markdown_sentences(section.casefold())
+    assert any(all(term in s for term in ("all", "explicit list", "apply")) for s in sentences)
+    assert any(all(term in s for term in ("only", "new change", "scope")) for s in sentences)
 
 
 def test_skill_references_list_links_cleaning_guide(skill_doc):

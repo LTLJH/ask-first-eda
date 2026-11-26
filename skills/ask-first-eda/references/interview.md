@@ -1,9 +1,9 @@
 # Interview and Ambiguity Log
 
-Track all eight items for every analysis. Record the request, reply, file documentation or verified observation that settles each entry.
+Use the eight items as an internal Ambiguity Log checklist. Record the request, reply, file documentation or verified observation that settles an entry.
 A file can establish that a code occurs. Its business meaning may still require an answer.
 
-## Checklist in interview order
+## Ambiguity Log checklist
 
 | Order | Item | What closes it |
 | --- | --- | --- |
@@ -18,12 +18,12 @@ A file can establish that a code occurs. Its business meaning may still require 
 
 ## Choosing one question
 
-1. Match the request and verified structure to the checklist. Log supplied definitions and file-confirmed facts as `resolved`, with their sources. For example, record zero blank dates and the range checked. Ask about a recorded zero separately if its business meaning is open.
-2. If table selection blocks inspection, ask about scope first. Otherwise apply the Step 1 definition of settled to each requested metric. After Data at a glance, give each settled headline with its unit, definition, numerical components and source locations. If a requested metric has competing definitions, show the labeled candidate values and ask which to use before asking about audience or use. Leave the choice open in the log.
+1. Match the request and verified structure to the checklist. Log supplied definitions and file-confirmed facts as `resolved`, with their sources.
+2. Resolve any table choice blocking inspection first. Follow Step 1 for settled headlines and first-turn comparisons. Keep competing definitions open in the log until there is evidence for a choice.
 3. For a choice that changes the result, locate the record responsible in the original file and verify candidate values in code. For example, if the last of four shipments has three packages and the others each have one, write “`$.shipments[3].packages` contributes one shipment or three packages. The totals are 4 shipments or 6 packages.” Use the actual path, totals and units for the file at hand.
 4. Offer two to four plausible answers grounded in the file. For an interpretation-only choice, explain the decision the reader would make. Allow a correction or “unsure / later.”
-5. Ask a single interrogative. Wait. Avoid attaching questions about neighboring items.
-6. If the reply is vague, ask about one discriminating case on the next turn. If the user explicitly deferred it, carry it forward as open and move to the next open item.
+5. Ask one question per rule, naming the rows and columns it covers and any exceptions. Wait for the reply.
+6. If clarification matters, ask about one case that distinguishes the answers. Keep a deferred choice open.
 
 ## Question bank
 
@@ -98,6 +98,5 @@ The two tables below show different fields of the same entries, joined by stable
 With each question, share two or three short lines of verified facts, such as the read range, blank-cell count or repeated-record count.
 Do not ask the user for counts that the file can supply. Candidate answers and elapsed time never confer approval.
 Keep the working log internal unless requested. On request, show its current fields as a table in the user's language.
-Three to six questions is typical. If one question seems sufficient, review all eight entries before stopping. Ask about any remaining item that lacks evidence, an explicit assumption, deferral or structural reason. Stop normally when all items are settled.
-If the user asks to proceed, close the interview immediately and leave outstanding items unresolved.
-When only deferred items remain, close the interview and deliver the report. Attach an unresolved ID and condition to alternatives only when their values differ. Keep a settled value unconditional and put any interpretation note in limitations. Withhold a number if its inputs cannot be verified.
+Use the question criterion in [Step 2 of the skill](../SKILL.md). If the user asks to proceed, close the interview immediately and leave outstanding items unresolved.
+Attach an unresolved ID and condition to alternatives only when their values differ. Keep a settled value unconditional and put any interpretation note in limitations. Withhold only the result whose inputs cannot be verified.
