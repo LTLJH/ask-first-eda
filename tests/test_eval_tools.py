@@ -1493,6 +1493,31 @@ class EvalToolsTests(unittest.TestCase):
                     grade = json.loads((run / "grade.json").read_text())
                     self.assertEqual((grade["numbers_verdict"], grade["overall"]), ("fail", "fail"))
 
+    def test_report_conflicts_require_compatible_known_unit_dimensions(self):
+        run = self.prepare_run()
+        report = run / "report.html"
+        for unit, display, conflict in (
+            ("kg", "1건", False),
+            ("kg", "99 kg", True),
+            ("kg", "99", True),
+            ("%", "45건", False),
+        ):
+            with self.subTest(unit=unit, display=display):
+                metric = {"name": "Measured value", "value": 10, "unit": unit}
+                self.write_expected([metric])
+                write_summary(run, [metric])
+                report.write_text(f"<p>Measured value = {display}</p>")
+
+                result = self.check_numbers(run)
+
+                self.assertEqual(result["missing"], [])
+                if conflict:
+                    [entry] = result["mismatched"]
+                    self.assertEqual(entry["reason"], "report_conflict")
+                else:
+                    self.assertEqual(result["mismatched"], [])
+                    self.assertEqual([entry["name"] for entry in result["matched"]], [metric["name"]])
+
     def test_a4_rounding_uses_displayed_html_decimal_places(self):
         run = self.prepare_run()
         report = run / "report.html"
