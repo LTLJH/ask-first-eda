@@ -118,6 +118,41 @@ def test_readme_limits_claims_about_current_version(evaluation):
     )
 
 
+def test_contributing_documents_case_reports_and_development_workflow():
+    path = ROOT / "CONTRIBUTING.md"
+    assert path.is_file()
+    contents = path.read_text(encoding="utf-8")
+    assert ".github/ISSUE_TEMPLATE/case_report.md" in contents
+    for phrase in (
+        "synthetic",
+        "anonymized",
+        "business question",
+        "ambiguous definitions",
+        "expected",
+        "actual",
+        "client",
+        "version",
+        "python -m pip install -r requirements.txt -r requirements-dev.txt",
+        "python -m pytest -q",
+        "ln -sf ../../scripts/hooks/pre-commit .git/hooks/pre-commit",
+        "red",
+        "green",
+    ):
+        assert phrase.lower() in contents.lower()
+    assert "personal paths" in contents.lower()
+    assert "company data" in contents.lower()
+    assert "source text" in contents.lower()
+
+
+def test_readmes_cross_link_and_link_to_contributing():
+    english = (ROOT / "README.md").read_text(encoding="utf-8")
+    korean = (ROOT / "README.ko.md").read_text(encoding="utf-8")
+    assert re.search(r"\]\(README\.ko\.md\)", english)
+    assert re.search(r"\]\(README\.md\)", korean)
+    for contents in (english, korean):
+        assert re.search(r"\]\(CONTRIBUTING\.md\)", contents)
+
+
 def test_case_report_template_collects_reproduction_details():
     path = ROOT / ".github" / "ISSUE_TEMPLATE" / "case_report.md"
     assert path.is_file()

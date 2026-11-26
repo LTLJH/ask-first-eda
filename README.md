@@ -2,6 +2,8 @@
 
 Ask First EDA asks how you define your metrics before it calculates them and builds a report with charts.
 
+[Korean](README.ko.md)
+
 | Hour | Machine status | Units produced |
 | --- | --- | ---: |
 | 08:00–09:00 | Running | 18 |
@@ -112,3 +114,5 @@ These small exploratory comparisons do not guarantee performance for the current
 ## License
 
 The code is licensed under [MIT](LICENSE). [Example datasets](examples/README.md) retain their own licenses.
+
+[Contributing](CONTRIBUTING.md)
