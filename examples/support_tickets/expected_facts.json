@@ -1,0 +1,84 @@
+{
+  "created_at_by_timezone": {
+    "+09:00": 1293,
+    "Z": 207
+  },
+  "created_at_date_shifts_to_kst": 74,
+  "created_date_range_kst": [
+    "2025-04-01",
+    "2025-06-30"
+  ],
+  "csat": {
+    "missing_originals": 1312,
+    "rated_resolved": 173,
+    "rated_unresolved": 0
+  },
+  "duplicate_rows": 15,
+  "first_response_sla": {
+    "business_hours": {
+      "breached": 199,
+      "compliance_pct": 86.4349,
+      "denominator": 1467,
+      "met": 1268,
+      "pending": 18
+    },
+    "elapsed_time": {
+      "breached": 1133,
+      "compliance_pct": 23.3942,
+      "denominator": 1479,
+      "met": 346,
+      "pending": 6
+    }
+  },
+  "incident_comparison": {
+    "incident": {
+      "mean_elapsed_hours": 52.0778,
+      "mean_elapsed_hours_by_priority": {
+        "P1": 57.6075,
+        "P2": 25.875,
+        "P3": 27.0383,
+        "P4": 64.9481
+      },
+      "p1_tickets": 125,
+      "resolved_tickets": 156,
+      "resolved_tickets_by_priority": {
+        "P1": 117,
+        "P2": 10,
+        "P3": 20,
+        "P4": 9
+      },
+      "tickets": 165
+    },
+    "previous_week": {
+      "mean_elapsed_hours": 37.6671,
+      "mean_elapsed_hours_by_priority": {
+        "P1": 56.2083,
+        "P2": 25.9104,
+        "P3": 28.5352,
+        "P4": 53.0222
+      },
+      "p1_tickets": 5,
+      "resolved_tickets": 42,
+      "resolved_tickets_by_priority": {
+        "P1": 4,
+        "P2": 8,
+        "P3": 18,
+        "P4": 12
+      },
+      "tickets": 45
+    }
+  },
+  "missing_customer_tier_rows": 107,
+  "resolution": {
+    "mean_elapsed_hours": 51.1992,
+    "mean_excluding_waiting_customer_hours": 45.6611,
+    "reopened_mean_to_final_closed_hours": 88.8031,
+    "reopened_mean_to_first_resolved_hours": 50.2982,
+    "reopened_tickets": 103,
+    "resolved_denominator": 1340
+  },
+  "rows": 1500,
+  "unanswered_originals": 70,
+  "unresolved_originals": 145,
+  "unresolved_rows": 147
+}

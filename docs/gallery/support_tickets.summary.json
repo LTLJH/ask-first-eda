@@ -1,0 +1,784 @@
+{
+  "datasets": [
+    {
+      "id": "jsonl:1",
+      "format": "jsonl",
+      "read_ranges": [
+        "tickets.jsonl lines 1\u20131500 (full UTF-8 read. One JSON object per line, no header.)"
+      ],
+      "unread": [],
+      "rows": 1500,
+      "columns": 12,
+      "structure": {
+        "sheet": null,
+        "header_rows": [],
+        "record_path": null,
+        "column_names": [
+          "ticket_id",
+          "created_at",
+          "channel",
+          "priority",
+          "customer_tier",
+          "product_area",
+          "assignee_team",
+          "events",
+          "first_response_at",
+          "resolved_at",
+          "csat",
+          "duplicate_of"
+        ]
+      }
+    }
+  ],
+  "row_counts": [
+    {
+      "input": "tickets.jsonl",
+      "transform": "Decode one JSON object per line and retain original line numbers",
+      "output": "Q2 receipts",
+      "before": 1500,
+      "after": 1500
+    },
+    {
+      "input": "Q2 receipts",
+      "transform": "Exclude duplicate_of links from the first-response population",
+      "output": "Original tickets",
+      "before": 1500,
+      "after": 1485
+    },
+    {
+      "input": "Original tickets",
+      "transform": "Determine eligibility at quarter-end",
+      "output": "First-response SLA cohort",
+      "before": 1485,
+      "after": 1467
+    },
+    {
+      "input": "First-response SLA cohort",
+      "transform": "Select recorded first responses for raw chart",
+      "output": "Observed first responses",
+      "before": 1467,
+      "after": 1415
+    },
+    {
+      "input": "First-response SLA cohort",
+      "transform": "Pool counts by KST receipt month",
+      "output": "Monthly values",
+      "before": 1467,
+      "after": 3
+    },
+    {
+      "input": "Q2 receipts",
+      "transform": "Select and time first resolution",
+      "output": "First resolutions",
+      "before": 1500,
+      "after": 1353
+    },
+    {
+      "input": "First resolutions",
+      "transform": "Emit New, Assigned and Waiting for customer hours per ticket",
+      "output": "Status-duration values",
+      "before": 1353,
+      "after": 4059
+    }
+  ],
+  "metrics": [
+    {
+      "name": "First-response SLA attainment",
+      "numerator": 1268,
+      "denominator": 1467,
+      "definition": "Tickets with a recorded first response at or below their business-time target divided by all eligible original tickets. The denominator includes recorded responses and unanswered tickets whose deadline passed by quarter-end.",
+      "value": 86.43490115882754,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "First-response SLA misses",
+      "numerator": null,
+      "denominator": null,
+      "definition": "Among 1,467 eligible tickets, 147 responded above target and 52 remained unanswered past target.",
+      "value": 199.0,
+      "unit": "tickets",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Median time to first resolution",
+      "numerator": null,
+      "denominator": null,
+      "definition": "Median across 1,353 tickets from receipt to first resolved status, excluding customer-wait intervals. Rate components are inapplicable.",
+      "value": 40.38333333333333,
+      "unit": "hours",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 with a first $.events[*].status of resolved"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Pre-resolution elapsed time in Assigned",
+      "numerator": 61085.16666666667,
+      "denominator": 69091.81666666667,
+      "definition": "Sum of elapsed hours in Assigned divided by all elapsed hours before first resolution, across tickets with a first resolution.",
+      "value": 88.41157985665934,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 with a first $.events[*].status of resolved"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Priority \u00b7 P1",
+      "numerator": 194,
+      "denominator": 228,
+      "definition": "First-response attainment for this group. 34 missed, including 11 unanswered past deadline.",
+      "value": 85.08771929824562,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with priority = P1"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Priority \u00b7 P2",
+      "numerator": 247,
+      "denominator": 299,
+      "definition": "First-response attainment for this group. 52 missed, including 11 unanswered past deadline.",
+      "value": 82.6086956521739,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with priority = P2"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Priority \u00b7 P3",
+      "numerator": 470,
+      "denominator": 531,
+      "definition": "First-response attainment for this group. 61 missed, including 13 unanswered past deadline.",
+      "value": 88.51224105461394,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with priority = P3"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Priority \u00b7 P4",
+      "numerator": 357,
+      "denominator": 409,
+      "definition": "First-response attainment for this group. 52 missed, including 17 unanswered past deadline.",
+      "value": 87.28606356968216,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with priority = P4"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Assignee team \u00b7 account_support",
+      "numerator": 289,
+      "denominator": 350,
+      "definition": "First-response attainment for this group. 61 missed, including 20 unanswered past deadline.",
+      "value": 82.57142857142857,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with assignee_team = account_support"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Assignee team \u00b7 platform",
+      "numerator": 407,
+      "denominator": 463,
+      "definition": "First-response attainment for this group. 56 missed, including 15 unanswered past deadline.",
+      "value": 87.9049676025918,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with assignee_team = platform"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Assignee team \u00b7 product_support",
+      "numerator": 290,
+      "denominator": 331,
+      "definition": "First-response attainment for this group. 41 missed, including 8 unanswered past deadline.",
+      "value": 87.61329305135952,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with assignee_team = product_support"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Assignee team \u00b7 technical_support",
+      "numerator": 282,
+      "denominator": 323,
+      "definition": "First-response attainment for this group. 41 missed, including 9 unanswered past deadline.",
+      "value": 87.30650154798762,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with assignee_team = technical_support"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Channel \u00b7 chat",
+      "numerator": 364,
+      "denominator": 418,
+      "definition": "First-response attainment for this group. 54 missed, including 18 unanswered past deadline.",
+      "value": 87.08133971291866,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with channel = chat"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Channel \u00b7 email",
+      "numerator": 765,
+      "denominator": 886,
+      "definition": "First-response attainment for this group. 121 missed, including 26 unanswered past deadline.",
+      "value": 86.3431151241535,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with channel = email"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Channel \u00b7 phone",
+      "numerator": 139,
+      "denominator": 163,
+      "definition": "First-response attainment for this group. 24 missed, including 8 unanswered past deadline.",
+      "value": 85.2760736196319,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with channel = phone"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt window \u00b7 Business hours",
+      "numerator": 380,
+      "denominator": 424,
+      "definition": "First-response attainment for this group. 44 missed, including 14 unanswered past deadline.",
+      "value": 89.62264150943396,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with receipt = Business hours"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt window \u00b7 Outside business hours",
+      "numerator": 888,
+      "denominator": 1043,
+      "definition": "First-response attainment for this group. 155 missed, including 38 unanswered past deadline.",
+      "value": 85.13902205177374,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with receipt = Outside business hours"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt month \u00b7 2025-04",
+      "numerator": 384,
+      "denominator": 450,
+      "definition": "First-response attainment for this group. 66 missed, including 15 unanswered past deadline.",
+      "value": 85.33333333333333,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with month = 2025-04"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt month \u00b7 2025-05",
+      "numerator": 399,
+      "denominator": 465,
+      "definition": "First-response attainment for this group. 66 missed, including 18 unanswered past deadline.",
+      "value": 85.80645161290323,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with month = 2025-05"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt month \u00b7 2025-06",
+      "numerator": 485,
+      "denominator": 552,
+      "definition": "First-response attainment for this group. 67 missed, including 19 unanswered past deadline.",
+      "value": 87.8623188405797,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with month = 2025-06"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt window and priority \u00b7 Business hours / P1",
+      "numerator": 72,
+      "denominator": 84,
+      "definition": "First-response attainment for this group. 12 missed, including 6 unanswered past deadline.",
+      "value": 85.71428571428571,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with receipt = Business hours, priority = P1"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt window and priority \u00b7 Business hours / P2",
+      "numerator": 74,
+      "denominator": 78,
+      "definition": "First-response attainment for this group. 4 missed, including 1 unanswered past deadline.",
+      "value": 94.87179487179488,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with receipt = Business hours, priority = P2"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt window and priority \u00b7 Business hours / P3",
+      "numerator": 123,
+      "denominator": 144,
+      "definition": "First-response attainment for this group. 21 missed, including 4 unanswered past deadline.",
+      "value": 85.41666666666667,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with receipt = Business hours, priority = P3"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt window and priority \u00b7 Business hours / P4",
+      "numerator": 111,
+      "denominator": 118,
+      "definition": "First-response attainment for this group. 7 missed, including 3 unanswered past deadline.",
+      "value": 94.0677966101695,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with receipt = Business hours, priority = P4"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt window and priority \u00b7 Outside business hours / P1",
+      "numerator": 122,
+      "denominator": 144,
+      "definition": "First-response attainment for this group. 22 missed, including 5 unanswered past deadline.",
+      "value": 84.72222222222223,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with receipt = Outside business hours, priority = P1"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt window and priority \u00b7 Outside business hours / P2",
+      "numerator": 173,
+      "denominator": 221,
+      "definition": "First-response attainment for this group. 48 missed, including 10 unanswered past deadline.",
+      "value": 78.28054298642535,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with receipt = Outside business hours, priority = P2"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt window and priority \u00b7 Outside business hours / P3",
+      "numerator": 347,
+      "denominator": 387,
+      "definition": "First-response attainment for this group. 40 missed, including 9 unanswered past deadline.",
+      "value": 89.6640826873385,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with receipt = Outside business hours, priority = P3"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Receipt window and priority \u00b7 Outside business hours / P4",
+      "numerator": 246,
+      "denominator": 291,
+      "definition": "First-response attainment for this group. 45 missed, including 14 unanswered past deadline.",
+      "value": 84.5360824742268,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 filtered to the eligible first-response cohort with receipt = Outside business hours, priority = P4"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Median gross time to first resolution",
+      "numerator": null,
+      "denominator": null,
+      "definition": "Ticket-level quantile across 1,353 first resolutions. Rate components are inapplicable.",
+      "value": 45.38333333333333,
+      "unit": "hours",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 with a first $.events[*].status of resolved"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "90th percentile gross time to first resolution",
+      "numerator": null,
+      "denominator": null,
+      "definition": "Ticket-level quantile across 1,353 first resolutions. Rate components are inapplicable.",
+      "value": 93.16,
+      "unit": "hours",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 with a first $.events[*].status of resolved"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "90th percentile adjusted time to first resolution",
+      "numerator": null,
+      "denominator": null,
+      "definition": "Ticket-level quantile across 1,353 first resolutions. Rate components are inapplicable.",
+      "value": 87.13999999999994,
+      "unit": "hours",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 with a first $.events[*].status of resolved"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Median time in Assigned before first resolution",
+      "numerator": null,
+      "denominator": null,
+      "definition": "Ticket-level quantile across 1,353 first resolutions. Rate components are inapplicable.",
+      "value": 39.81666666666667,
+      "unit": "hours",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 with a first $.events[*].status of resolved"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Total elapsed time in New",
+      "numerator": null,
+      "denominator": null,
+      "definition": "Sum of time in this status before first resolution across 1,353 tickets, including tickets with zero time in the status. Rate components are inapplicable.",
+      "value": 521.7333333333333,
+      "unit": "hours",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 with a first $.events[*].status of resolved"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Total elapsed time in Assigned",
+      "numerator": null,
+      "denominator": null,
+      "definition": "Sum of time in this status before first resolution across 1,353 tickets, including tickets with zero time in the status. Rate components are inapplicable.",
+      "value": 61085.16666666667,
+      "unit": "hours",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 with a first $.events[*].status of resolved"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Total elapsed time in Waiting for customer",
+      "numerator": null,
+      "denominator": null,
+      "definition": "Sum of time in this status before first resolution across 1,353 tickets, including tickets with zero time in the status. Rate components are inapplicable.",
+      "value": 7484.916666666666,
+      "unit": "hours",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 with a first $.events[*].status of resolved"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "First resolutions with customer wait",
+      "numerator": 428,
+      "denominator": 1353,
+      "definition": "Tickets with positive customer-wait time before their first resolution divided by tickets with a first resolution.",
+      "value": 31.63340724316334,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 with a first $.events[*].status of resolved"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Resolution SLA attainment",
+      "numerator": null,
+      "denominator": null,
+      "definition": "The resolution target is unknown. The numerator and denominator for attainment remain undefined.",
+      "value": null,
+      "unit": "%",
+      "source_refs": [
+        "tickets.jsonl lines 1\u20131500 with a first $.events[*].status of resolved"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    }
+  ],
+  "ambiguity_log": [
+    {
+      "id": "A01",
+      "checklist_item": "Business process",
+      "question": "Use the first or last recorded resolution?",
+      "file_evidence": [
+        "tickets.jsonl lines 1\u20131500, $.events[*].status sequence",
+        "tickets.jsonl line 15 has a reopened event"
+      ],
+      "candidates": [
+        "First resolved event",
+        "Last resolved event"
+      ],
+      "status": "resolved",
+      "answer": "Measure from receipt to the first resolved event. Subtract intervals beginning in waiting_customer and ending at the next recorded event. The user chose the first resolved event even if the ticket reopened.",
+      "affects": [
+        "Resolution timing"
+      ]
+    },
+    {
+      "id": "A02",
+      "checklist_item": "Decision",
+      "question": null,
+      "file_evidence": [
+        "tickets.jsonl lines 1\u20131500"
+      ],
+      "candidates": [],
+      "status": "resolved",
+      "answer": "The user will discuss next-quarter staffing using the Q2 SLA and delay findings.",
+      "affects": [
+        "Intake windows and group comparisons"
+      ]
+    },
+    {
+      "id": "A03",
+      "checklist_item": "Row meaning",
+      "question": null,
+      "file_evidence": [
+        "tickets.jsonl lines 1\u20131500 have 1,500 distinct ticket_id values and nested event records"
+      ],
+      "candidates": [],
+      "status": "resolved",
+      "answer": "Analyze one ticket per JSON line. Keep the event sequence within each ticket.",
+      "affects": [
+        "All ticket counts"
+      ]
+    },
+    {
+      "id": "A04",
+      "checklist_item": "SLA thresholds and denominator",
+      "question": "What first-response and resolution time targets apply?",
+      "file_evidence": [
+        "tickets.jsonl line 1 has priority and response timestamps"
+      ],
+      "candidates": [
+        "Priority-based targets"
+      ],
+      "status": "resolved",
+      "answer": "User supplied P1/P2/P3/P4 first-response targets of 1/4/8/24 business hours. Count all eligible originals once.",
+      "affects": [
+        "First-response SLA attainment"
+      ]
+    },
+    {
+      "id": "A05",
+      "checklist_item": "Time basis",
+      "question": null,
+      "file_evidence": [
+        "tickets.jsonl lines 1 and 1500 delimit the Q2 KST receipt range"
+      ],
+      "candidates": [],
+      "status": "resolved",
+      "answer": "Score Q2 2025 KST arrivals at quarter-end. Use weekdays 09:00\u201318:00 KST, except May 5 and June 6, for the first-response clock. Resolution uses elapsed hours.",
+      "affects": [
+        "Quarter cohort and duration calculations"
+      ]
+    },
+    {
+      "id": "A06",
+      "checklist_item": "Exceptions",
+      "question": "Do tickets marked duplicate_of count separately?",
+      "file_evidence": [
+        "tickets.jsonl line 161 has duplicate_of"
+      ],
+      "candidates": [
+        "Separate tickets",
+        "Exclude linked duplicates"
+      ],
+      "status": "resolved",
+      "answer": "User confirmed excluding tickets marked duplicate_of from first-response SLA only. Those IDs link to original tickets in the file.",
+      "affects": [
+        "First-response SLA attainment"
+      ]
+    },
+    {
+      "id": "A07",
+      "checklist_item": "Missing values",
+      "question": "Count overdue unanswered tickets as misses or use recorded responses only?",
+      "file_evidence": [
+        "tickets.jsonl line 18 lacks first_response_at and its deadline passed"
+      ],
+      "candidates": [
+        "Include overdue unanswered misses",
+        "Use recorded responses only"
+      ],
+      "status": "resolved",
+      "answer": "User confirmed counting 54 overdue unanswered tickets before duplicate exclusions. The final eligible cohort contains 52. Exclude the 18 original tickets whose response targets remained open.",
+      "affects": [
+        "First-response SLA attainment"
+      ]
+    },
+    {
+      "id": "A08",
+      "checklist_item": "Join keys",
+      "question": null,
+      "file_evidence": [
+        "tickets.jsonl lines 1\u20131500"
+      ],
+      "candidates": [],
+      "status": "not_applicable",
+      "answer": "The analysis uses one table. No external lookup or event-level join is needed.",
+      "affects": []
+    },
+    {
+      "id": "A09",
+      "checklist_item": "Resolution SLA targets",
+      "question": null,
+      "file_evidence": [
+        "tickets.jsonl line 1 has resolved_at and event status without a target field"
+      ],
+      "candidates": [],
+      "status": "unresolved",
+      "answer": "User reported that the resolution SLA targets are unknown.",
+      "affects": [
+        "Resolution SLA attainment"
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "id": "monthly_attainment",
+      "question": "How did first-response attainment change through Q2?",
+      "type": "line_time",
+      "source_columns": [
+        "month_start",
+        "percent"
+      ],
+      "n_used": 3,
+      "n_excluded": 0,
+      "exclusion_reason": null
+    },
+    {
+      "id": "response_observations",
+      "question": "How close were individual responses to their targets?",
+      "type": "scatter",
+      "source_columns": [
+        "source_line",
+        "target_multiple"
+      ],
+      "n_used": 1415,
+      "n_excluded": 0,
+      "exclusion_reason": null
+    },
+    {
+      "id": "resolution_spread",
+      "question": "How widely did customer-wait-adjusted time to first resolution vary?",
+      "type": "histogram",
+      "source_columns": [
+        "adjusted_h"
+      ],
+      "n_used": 1353,
+      "n_excluded": 0,
+      "exclusion_reason": null
+    },
+    {
+      "id": "resolution_stages",
+      "question": "Which recorded status accounted for the most time before first resolution?",
+      "type": "grouped_boxplot",
+      "source_columns": [
+        "status",
+        "elapsed_h"
+      ],
+      "n_used": 4059,
+      "n_excluded": 0,
+      "exclusion_reason": null
+    }
+  ],
+  "exclusions": [
+    {
+      "scope": "First-response SLA and response charts",
+      "source_refs": [
+        "tickets.jsonl lines 161, 278, 328, 342, 533, 538, 547, 572, 607, 624, 762, 765, 866, 916, 920"
+      ],
+      "reason": "15 tickets linked to originals through duplicate_of. The original tickets are evaluated under the same first-response rules."
+    },
+    {
+      "scope": "First-response SLA and response charts",
+      "source_refs": [
+        "tickets.jsonl lines 1434, 1457, 1459, 1470, 1475, 1478, 1482\u20131484, 1491, 1493\u20131500"
+      ],
+      "reason": "18 unanswered original tickets whose first-response deadlines remained open at quarter-end."
+    },
+    {
+      "scope": "Recorded first-response chart",
+      "source_refs": [
+        "tickets.jsonl lines 18, 52, 68, 84, 113, 120, 157, 198, 229, 266, 269, 323, 388, 392, 401, 457, 528, 536\u2013537, 564\u2013565, 578, 606, 650, 674, 706, 718, 750\u2013751, 784, 827, 849, 857, 945, 995, 1025, 1048, 1067, 1108, 1140, 1152, 1192, 1202, 1228, 1233, 1235, 1263, 1282, 1299, 1338, 1382, 1490"
+      ],
+      "reason": "52 eligible overdue tickets have no observed first-response duration. They contribute to the compliance denominator as misses."
+    },
+    {
+      "scope": "Resolution metrics and charts",
+      "source_refs": [
+        "tickets.jsonl lines 9, 14, 18, 51\u201352, 68, 75, 84, 86, 96, 113, 120\u2013121, 149, 154, 157, 173, 198, 203, 225, 229, 241, 266, 269, 272, 282, 319, 323\u2013324, 331, 342, 388, 390, 392, 394, 401, 417, 455, 457, 471, 494, 496, 528, 532, 536\u2013537, 555, 564\u2013565, 578\u2013579, 606, 609, 650, 661, 674, 684, 694\u2013695, 706, 718, 728, 750\u2013751, 765, 771, 777, 781, 784, 798, 804, 827, 849, 857, 861, 874, 903, 927, 945, 995, 1003, 1008, 1025, 1030, 1047\u20131048, 1067, 1092, 1094, 1099, 1108, 1116, 1140, 1151\u20131152, 1192, 1202, 1228, 1233, 1235, 1255, 1263, 1282, 1299, 1322, 1338, 1382, 1386, 1418, 1433\u20131434, 1444, 1454, 1457, 1459, 1462\u20131468, 1470\u20131472, 1475\u20131476, 1478\u20131480, 1482\u20131485, 1488\u20131500"
+      ],
+      "reason": "147 tickets have no first resolved event by quarter-end."
+    }
+  ]
+}

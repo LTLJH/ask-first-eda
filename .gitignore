@@ -1,0 +1,11 @@
+_private/
+CLAUDE.md
+evals/runs/*
+!evals/runs/.gitkeep
+.DS_Store
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/
+.env
+dist/

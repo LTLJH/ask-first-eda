@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["datasets", "row_counts", "metrics", "ambiguity_log", "charts", "exclusions"],
+  "properties": {
+    "datasets": {"type": "array", "items": {"type": "object", "required": ["id", "format", "read_ranges", "unread", "rows", "columns"], "properties": {
+      "id": {"type": "string"}, "format": {"type": "string"}, "read_ranges": {"$ref": "#/$defs/strings"}, "unread": {"$ref": "#/$defs/strings"}, "rows": {"$ref": "#/$defs/count"}, "columns": {"$ref": "#/$defs/count"},
+      "structure": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sheet", "header_rows", "record_path", "column_names"],
+        "properties": {
+          "sheet": {"type": ["string", "null"]},
+          "header_rows": {"type": "array", "items": {"type": "integer", "minimum": 1}},
+          "record_path": {"type": ["string", "null"]},
+          "column_names": {"$ref": "#/$defs/strings"}
+        }
+      }
+    }}},
+    "row_counts": {"type": "array", "items": {"type": "object", "required": ["input", "transform", "output", "before", "after"], "properties": {
+      "input": {"type": "string"}, "transform": {"type": "string"}, "output": {"type": "string"}, "before": {"$ref": "#/$defs/count"}, "after": {"$ref": "#/$defs/count"}
+    }}},
+    "metrics": {"type": "array", "items": {"type": "object", "required": ["name", "definition", "numerator", "denominator", "value", "unit", "depends_on_ambiguity_ids", "condition", "source_refs"], "properties": {
+      "name": {"type": "string"}, "definition": {"type": "string"}, "numerator": {"$ref": "#/$defs/quantity"}, "denominator": {"$ref": "#/$defs/quantity"}, "value": {"$ref": "#/$defs/quantity"}, "unit": {"type": "string"}, "scale": {"type": "number", "exclusiveMinimum": 0}, "depends_on_ambiguity_ids": {"$ref": "#/$defs/strings"}, "condition": {"type": ["string", "null"]}, "source_refs": {"$ref": "#/$defs/strings"}
+    }}},
+    "ambiguity_log": {"type": "array", "items": {"type": "object", "required": ["id", "checklist_item", "question", "file_evidence", "candidates", "status", "answer", "affects"], "properties": {
+      "id": {"type": "string"}, "checklist_item": {"type": "string"}, "question": {"type": ["string", "null"]}, "file_evidence": {"$ref": "#/$defs/strings"}, "candidates": {"$ref": "#/$defs/strings"}, "status": {"enum": ["resolved", "user_assumed", "unresolved", "not_applicable"]}, "answer": {"type": ["string", "null"]}, "affects": {"$ref": "#/$defs/strings"}
+    }}},
+    "charts": {"type": "array", "items": {"type": "object", "required": ["id", "question", "type", "source_columns"], "properties": {
+      "id": {"type": "string"}, "question": {"type": "string"}, "type": {"type": "string"}, "source_columns": {"$ref": "#/$defs/strings"},
+      "n_used": {"type": "integer", "minimum": 0}, "n_excluded": {"type": "integer", "minimum": 0},
+      "pairwise_n": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        }
+      }
+    }}},
+    "exclusions": {"type": "array", "items": {"type": "object", "required": ["scope", "source_refs", "reason"], "properties": {
+      "scope": {"type": "string"}, "source_refs": {"$ref": "#/$defs/strings"}, "reason": {"type": "string"}
+    }}},
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inputs", "skill_version", "schema_version", "builder", "outputs"],
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "sha256"],
+            "properties": {
+              "name": {"type": "string", "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[^/\\\\]+(?![\\s\\S])"},
+              "sha256": {"$ref": "#/$defs/sha256"}
+            }
+          }
+        },
+        "skill_version": {"$ref": "#/$defs/version"},
+        "schema_version": {"$ref": "#/$defs/version"},
+        "builder": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+@[0-9]+\\.[0-9]+\\.[0-9]+(?![\\s\\S])"},
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": {"type": "string", "pattern": "^figures/(?:(?!\\.{1,2}/)[^/\\\\]+/)*[^/\\\\]+\\.[pP][nN][gG](?![\\s\\S])"},
+              "sha256": {"$ref": "#/$defs/sha256"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "strings": {"type": "array", "items": {"type": "string"}},
+    "count": {"type": ["integer", "null"], "minimum": 0},
+    "quantity": {"type": ["number", "null"]},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?![\\s\\S])"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}(?![\\s\\S])"}
+  }
+}

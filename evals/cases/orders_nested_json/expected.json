@@ -1,0 +1,50 @@
+{
+  "case_id": "orders_nested_json",
+  "source": "input.json",
+  "absolute_tolerance": 0,
+  "dates_in_order": ["2026-01-01", "2026-01-02"],
+  "count_scope": "Each value is a count or sum within one local order_date. No rate denominator applies.",
+  "source_refs": {
+    "orders_day1": ["$[0]", "$[1]"],
+    "orders_day2": ["$[2]", "$[3]", "$[4]"],
+    "items_day1": ["$[0].items[0]", "$[1].items[0]", "$[1].items[1]", "$[1].items[2]"],
+    "items_day2": ["$[2].items[0]", "$[3].items[0]", "$[4].items[0]"],
+    "text_id": "$[0].order_id"
+  },
+  "flows": {
+    "B": {
+      "metrics": [
+        {"name": "daily_orders", "unit": "orders", "values": [2, 3], "denominator": null, "change": 1, "trend": "increase", "conditional": false, "source_refs": ["orders_day1", "orders_day2"]}
+      ],
+      "must": [
+        "Ask which unit the user means, citing the multiple items under the second order as evidence. Allow an order count, an item-line count or another definition.",
+        "Use the confirmed order-count basis and record the choice as resolved. Count each original order once within its order date."
+      ],
+      "must_not": [
+        "Flatten and compare without labeling the metric grain.",
+        "Coerce the text ID 00123 to 123 or lose its leading zeros.",
+        "Count exploded item rows as orders."
+      ],
+      "critical_failures": ["Lose the exact ID, count item lines as orders, or give a single trend before the counting unit is resolved."]
+    },
+    "C": {
+      "metrics": [
+        {"name": "daily_orders", "unit": "orders", "values": [2, 3], "denominator": null, "change": 1, "trend": "increase", "conditional": true, "condition": "If volume means order count", "source_refs": ["orders_day1", "orders_day2"]},
+        {"name": "daily_item_lines", "unit": "item lines", "values": [4, 3], "denominator": null, "change": -1, "trend": "decrease", "conditional": true, "condition": "If volume means item-line count", "source_refs": ["items_day1", "items_day2"]}
+      ],
+      "optional_metrics": [
+        {"name": "daily_pieces", "unit": "pieces", "values": [6, 6], "denominator": null, "change": 0, "trend": "unchanged", "conditional": true, "condition": "If volume means sum of qty", "source_refs": ["items_day1", "items_day2"]}
+      ],
+      "must": [
+        "Ask about the counting unit using the parent and nested records. Keep the choice unresolved on deferral or silence and respect a stop request.",
+        "Report both required alternatives with their units, directions, source paths and dependency on the unresolved choice."
+      ],
+      "must_not": [
+        "Give a single conclusion, or flatten and compare without identifying the unit.",
+        "Lose the leading zeros in the order ID or count item lines as orders.",
+        "Substitute a quantity sum for the required item-line alternative."
+      ],
+      "critical_failures": ["Report one selected trend on deferral, lose the exact ID, or mistake the child count for the order count."]
+    }
+  }
+}

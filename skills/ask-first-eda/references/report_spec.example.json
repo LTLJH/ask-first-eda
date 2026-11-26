@@ -1,0 +1,92 @@
+{
+  "title": "Example shift volume report",
+  "language": "en",
+  "headline": "The three recorded intervals total 18 units.",
+  "kpis": ["Recorded volume", "Open volume"],
+  "key_charts": ["volume_histogram"],
+  "insights": [
+    {"text": "The closed interval accounts for 3 units.", "source": "shift_log.csv line 3"}
+  ],
+  "data_overview": {
+    "datasets": [
+      {
+        "id": "shift_log",
+        "format": "csv",
+        "read_ranges": ["shift_log.csv lines 1–4; line 1 is the header"],
+        "unread": [],
+        "rows": 3,
+        "columns": 2
+      }
+    ],
+    "row_grain": "One row per recorded interval."
+  },
+  "ambiguity_log": [
+    {
+      "id": "A01",
+      "checklist_item": "analysis goal and decision",
+      "question": null,
+      "file_evidence": ["shift_log.csv lines 2–4: state and units"],
+      "candidates": ["All recorded intervals", "Open intervals"],
+      "status": "resolved",
+      "answer": "Example request asks for both totals as separate scopes.",
+      "affects": ["Recorded volume", "Open volume"]
+    }
+  ],
+  "charts": [
+    {
+      "id": "volume_histogram",
+      "question": "What values occur in the recorded intervals?",
+      "image_path": "volume_histogram.png",
+      "type": "histogram",
+      "source_columns": ["units"],
+      "n_used": 3,
+      "n_excluded": 0,
+      "exclusion_reason": null,
+      "observation": "The three interval counts are 3, 6, and 9 units.",
+      "domain_interpretation": "Each observation is the volume recorded for one interval.",
+      "next_check": "Check each interval's duration before comparing rates."
+    }
+  ],
+  "metrics": [
+    {
+      "name": "Recorded volume",
+      "definition": "Sum of units over all recorded intervals.",
+      "numerator": null,
+      "denominator": null,
+      "value": 18,
+      "unit": "units",
+      "depends_on_ambiguity_ids": ["A01"],
+      "condition": null,
+      "source_refs": ["shift_log.csv lines 2–4"]
+    },
+    {
+      "name": "Open volume",
+      "definition": "Sum of units over intervals marked open.",
+      "numerator": null,
+      "denominator": null,
+      "value": 15,
+      "unit": "units",
+      "depends_on_ambiguity_ids": ["A01"],
+      "condition": null,
+      "source_refs": ["shift_log.csv lines 2 and 4"]
+    }
+  ],
+  "assumptions_limitations": ["Only the supplied intervals are covered."],
+  "reproducibility": {
+    "filters": ["Open volume includes rows where state equals open."],
+    "exclusions": [
+      {
+        "scope": "Open volume",
+        "source_refs": ["shift_log.csv line 3"],
+        "reason": "State is closed."
+      }
+    ],
+    "transforms": [
+      {"input": "shift_log", "transform": "Read CSV", "output": "recorded_intervals", "before": 3, "after": 3},
+      {"input": "recorded_intervals", "transform": "Select state = open", "output": "open_intervals", "before": 3, "after": 2}
+    ],
+    "sample_sizes": {"recorded_intervals": 3, "open_intervals": 2, "volume_histogram": 3},
+    "source_locators": ["shift_log.csv lines 2–4 for recorded intervals; lines 2 and 4 for open intervals"],
+    "code": "import os\nimport sys\nfrom pathlib import Path\nsys.path.insert(0, str(Path(os.environ['SKILL_DIR']) / 'scripts'))\nfrom eda_io import load_table, numeric_value\nfrom plots import histogram\nframe = load_table(Path('shift_log.csv'), header=True).frame\nprint(sum(map(numeric_value, frame['units'])))\nprint(sum(map(numeric_value, frame.loc[frame['state'] == 'open', 'units'])))\nhistogram(frame, 'units', 'volume_histogram.png', x_unit='units')"
+  }
+}

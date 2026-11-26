@@ -1,0 +1,515 @@
+{
+  "datasets": [
+    {
+      "id": "batches",
+      "format": "XLSX",
+      "rows": 10,
+      "columns": 7,
+      "unread": [],
+      "read_ranges": [
+        "utility_batches.xlsx, batches A1:G12. Group headers in row 1, field names in row 2, records in rows 3\u201312. Merged spans A1:B1, C1:D1 and E1:G1."
+      ],
+      "structure": {
+        "sheet": "batches",
+        "header_rows": [
+          1,
+          2
+        ],
+        "record_path": null,
+        "column_names": [
+          "Batch / batch_id",
+          "Batch / product",
+          "Interval / start_at",
+          "Interval / end_at",
+          "Production / status",
+          "Production / production",
+          "Production / production_unit"
+        ]
+      }
+    },
+    {
+      "id": "meter_readings",
+      "format": "XLSX",
+      "rows": 10,
+      "columns": 4,
+      "unread": [],
+      "read_ranges": [
+        "utility_batches.xlsx, meter_readings A1:D12. Group headers in row 1, field names in row 2, records in rows 3\u201312. Merged spans A1:B1 and C1:D1."
+      ],
+      "structure": {
+        "sheet": "meter_readings",
+        "header_rows": [
+          1,
+          2
+        ],
+        "record_path": null,
+        "column_names": [
+          "Identifiers / reading_id",
+          "Identifiers / batch_id",
+          "Meter / reading_at",
+          "Meter / steam_kg"
+        ]
+      }
+    }
+  ],
+  "row_counts": [
+    {
+      "input": "batches",
+      "transform": "Exclude confirmed duplicate and express output in tonnes",
+      "output": "unique batches",
+      "before": 10,
+      "after": 9
+    },
+    {
+      "input": "meter_readings",
+      "transform": "Sum kilograms by batch_id",
+      "output": "steam per batch",
+      "before": 10,
+      "after": 9
+    },
+    {
+      "input": "unique batches",
+      "transform": "One-to-one merge by batch_id",
+      "output": "matched batch records",
+      "before": 9,
+      "after": 9
+    },
+    {
+      "input": "steam per batch",
+      "transform": "One-to-one merge by batch_id",
+      "output": "matched batch records",
+      "before": 9,
+      "after": 9
+    },
+    {
+      "input": "matched batch records",
+      "transform": "Assign start date in KST and aggregate daily totals",
+      "output": "daily rates",
+      "before": 9,
+      "after": 2
+    },
+    {
+      "input": "matched batch records",
+      "transform": "Calculate rates for batches with positive output",
+      "output": "plotted batch rates",
+      "before": 9,
+      "after": 8
+    }
+  ],
+  "metrics": [
+    {
+      "name": "January 1 pooled rate",
+      "definition": "Fresh steam in kg divided by output in tonnes across 5 assigned records, including any shutdown at 0 kg and 0 t.",
+      "value": 111.11111111111111,
+      "unit": "kg/t",
+      "numerator": 500.0,
+      "denominator": 4.5,
+      "scale": 1,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 3, 4, 5, 6, 7",
+        "utility_batches.xlsx, meter_readings rows 3, 4, 5, 6, 7, 8"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "January 1 simple batch average",
+      "definition": "Sum of individual batch kg/t rates divided by the number of positive-output batches, with equal weight per batch.",
+      "value": 150.0,
+      "unit": "kg/t",
+      "numerator": 600.0,
+      "denominator": 4,
+      "scale": 1,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 3, 4, 5, 7",
+        "utility_batches.xlsx, meter_readings rows 3, 4, 5, 6, 8"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "January 1 pooled minus simple",
+      "definition": "Difference of the two January 1 rates in kg/t. This subtraction has no numerator or denominator.",
+      "value": -38.888888888888886,
+      "unit": "kg/t",
+      "numerator": null,
+      "denominator": null,
+      "scale": 1,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 3, 4, 5, 6, 7",
+        "utility_batches.xlsx, meter_readings rows 3, 4, 5, 6, 7, 8"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "January 1 product L pooled rate",
+      "definition": "Total fresh steam divided by total output for the 3 producing batch(es) of product L.",
+      "value": 75.0,
+      "unit": "kg/t",
+      "numerator": 300.0,
+      "denominator": 4.0,
+      "scale": 1,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 3, 4, 7",
+        "utility_batches.xlsx, meter_readings rows 3, 4, 5, 8"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "January 1 product H pooled rate",
+      "definition": "Total fresh steam divided by total output for the 1 producing batch(es) of product H.",
+      "value": 400.0,
+      "unit": "kg/t",
+      "numerator": 200.0,
+      "denominator": 0.5,
+      "scale": 1,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 5",
+        "utility_batches.xlsx, meter_readings rows 6"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "January 1 product H output share",
+      "definition": "Product H tonnes divided by all positive output tonnes.",
+      "value": 11.11111111111111,
+      "unit": "%",
+      "numerator": 0.5,
+      "denominator": 4.5,
+      "scale": 100,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 3, 4, 5, 7",
+        "utility_batches.xlsx, meter_readings rows 3, 4, 5, 6, 8"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "January 2 pooled rate",
+      "definition": "Fresh steam in kg divided by output in tonnes across 4 assigned records, including any shutdown at 0 kg and 0 t.",
+      "value": 307.14285714285717,
+      "unit": "kg/t",
+      "numerator": 4300.0,
+      "denominator": 14.0,
+      "scale": 1,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 8, 9, 10, 11",
+        "utility_batches.xlsx, meter_readings rows 9, 10, 11, 12"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "January 2 simple batch average",
+      "definition": "Sum of individual batch kg/t rates divided by the number of positive-output batches, with equal weight per batch.",
+      "value": 225.0,
+      "unit": "kg/t",
+      "numerator": 900.0,
+      "denominator": 4,
+      "scale": 1,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 8, 9, 10, 11",
+        "utility_batches.xlsx, meter_readings rows 9, 10, 11, 12"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "January 2 pooled minus simple",
+      "definition": "Difference of the two January 2 rates in kg/t. This subtraction has no numerator or denominator.",
+      "value": 82.14285714285717,
+      "unit": "kg/t",
+      "numerator": null,
+      "denominator": null,
+      "scale": 1,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 8, 9, 10, 11",
+        "utility_batches.xlsx, meter_readings rows 9, 10, 11, 12"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "January 2 product L pooled rate",
+      "definition": "Total fresh steam divided by total output for the 2 producing batch(es) of product L.",
+      "value": 75.0,
+      "unit": "kg/t",
+      "numerator": 300.0,
+      "denominator": 4.0,
+      "scale": 1,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 8, 9",
+        "utility_batches.xlsx, meter_readings rows 9, 10"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "January 2 product H pooled rate",
+      "definition": "Total fresh steam divided by total output for the 2 producing batch(es) of product H.",
+      "value": 400.0,
+      "unit": "kg/t",
+      "numerator": 4000.0,
+      "denominator": 10.0,
+      "scale": 1,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 10, 11",
+        "utility_batches.xlsx, meter_readings rows 11, 12"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "January 2 product H output share",
+      "definition": "Product H tonnes divided by all positive output tonnes.",
+      "value": 71.42857142857143,
+      "unit": "%",
+      "numerator": 10.0,
+      "denominator": 14.0,
+      "scale": 100,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 8, 9, 10, 11",
+        "utility_batches.xlsx, meter_readings rows 9, 10, 11, 12"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "January 2 minus January 1 pooled rate",
+      "definition": "Difference of daily pooled rates in kg/t. This subtraction has no numerator or denominator.",
+      "value": 196.03174603174605,
+      "unit": "kg/t",
+      "numerator": null,
+      "denominator": null,
+      "scale": 1,
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 3, 4, 5, 6, 7, 8, 9, 10, 11",
+        "utility_batches.xlsx, meter_readings rows 3, 4, 5, 6, 7, 8, 9, 10, 11, 12"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    }
+  ],
+  "ambiguity_log": [
+    {
+      "id": "A01",
+      "checklist_item": "Business process",
+      "file_evidence": [
+        "utility_batches.xlsx, batches rows 3\u201312 and meter_readings rows 3\u201312"
+      ],
+      "status": "resolved",
+      "answer": "The request identifies batch production and steam metering. Rows identify running batches and one shutdown.",
+      "question": null,
+      "candidates": [],
+      "affects": []
+    },
+    {
+      "id": "A02",
+      "checklist_item": "Decision",
+      "file_evidence": [
+        "User request for the daily plant meeting"
+      ],
+      "status": "resolved",
+      "answer": "Compare fresh steam per tonne and assess what the change says about efficiency.",
+      "question": null,
+      "candidates": [],
+      "affects": []
+    },
+    {
+      "id": "A03",
+      "checklist_item": "Row meaning",
+      "file_evidence": [
+        "utility_batches.xlsx, batches rows 10 and 12"
+      ],
+      "status": "resolved",
+      "answer": "User confirmed both rows represent one batch and chose row 10.",
+      "question": "Should I count rows 10 and 12 once as one physical batch?",
+      "candidates": [
+        "One physical batch",
+        "Two distinct records that both count"
+      ],
+      "affects": [
+        "January 2 rates and product mix"
+      ]
+    },
+    {
+      "id": "A04",
+      "checklist_item": "Units and denominators",
+      "file_evidence": [
+        "utility_batches.xlsx, batches F2:G12 and meter_readings D2:D12"
+      ],
+      "status": "resolved",
+      "answer": "Use recorded output in tonnes for the pooled ratio and one equal weight per positive-output batch for the simple average, as requested.",
+      "question": null,
+      "candidates": [],
+      "affects": []
+    },
+    {
+      "id": "A04B",
+      "checklist_item": "Meter reading meaning",
+      "file_evidence": [
+        "utility_batches.xlsx, meter_readings rows 3 and 4"
+      ],
+      "status": "resolved",
+      "answer": "User confirmed 80 kg and 120 kg are additive increments.",
+      "question": "Are the two readings separate amounts or cumulative totals?",
+      "candidates": [
+        "Separate amounts",
+        "Cumulative values"
+      ],
+      "affects": [
+        "Daily pooled rates",
+        "Simple batch averages",
+        "Pooled minus simple"
+      ]
+    },
+    {
+      "id": "A05",
+      "checklist_item": "Time basis",
+      "file_evidence": [
+        "utility_batches.xlsx, batches row 7 and meter_readings row 8"
+      ],
+      "status": "resolved",
+      "answer": "User assigned all of B-0016 to its January 1 start date in Korea Standard Time.",
+      "question": "Which day should receive the whole batch?",
+      "candidates": [
+        "January 1 start date",
+        "January 2 end date"
+      ],
+      "affects": [
+        "Daily pooled rates",
+        "Simple batch averages",
+        "Pooled minus simple"
+      ]
+    },
+    {
+      "id": "A06",
+      "checklist_item": "Shutdown output",
+      "file_evidence": [
+        "utility_batches.xlsx, batches row 6"
+      ],
+      "status": "resolved",
+      "answer": "User confirmed zero output. The shutdown has an undefined individual rate.",
+      "question": "Does zero mean no output or inapplicable or unrecorded production?",
+      "candidates": [
+        "Zero output",
+        "Inapplicable or unrecorded"
+      ],
+      "affects": []
+    },
+    {
+      "id": "A06B",
+      "checklist_item": "Shutdown steam",
+      "file_evidence": [
+        "utility_batches.xlsx, meter_readings row 7"
+      ],
+      "status": "resolved",
+      "answer": "User confirmed measured zero steam during the shutdown.",
+      "question": "Was shutdown steam a measured zero or unrecorded?",
+      "candidates": [
+        "Measured zero",
+        "Unrecorded"
+      ],
+      "affects": []
+    },
+    {
+      "id": "A07",
+      "checklist_item": "Missingness and zero steam on January 1",
+      "file_evidence": [
+        "utility_batches.xlsx, meter_readings row 8"
+      ],
+      "status": "resolved",
+      "answer": "User confirmed B-0016 used no fresh steam. No blank cells in the original data rows.",
+      "question": "Does the recorded zero mean measured zero or unavailable steam?",
+      "candidates": [
+        "Measured zero",
+        "Unavailable"
+      ],
+      "affects": [
+        "Daily pooled rates",
+        "Simple batch averages",
+        "Pooled minus simple"
+      ]
+    },
+    {
+      "id": "A07B",
+      "checklist_item": "Zero steam on January 2",
+      "file_evidence": [
+        "utility_batches.xlsx, meter_readings row 9"
+      ],
+      "status": "resolved",
+      "answer": "User confirmed B-0017 used no fresh steam.",
+      "question": "Does the recorded zero mean measured zero or unavailable steam?",
+      "candidates": [
+        "Measured zero",
+        "Unavailable"
+      ],
+      "affects": [
+        "Daily pooled rates",
+        "Simple batch averages",
+        "Pooled minus simple"
+      ]
+    },
+    {
+      "id": "A08",
+      "checklist_item": "Join keys",
+      "file_evidence": [
+        "utility_batches.xlsx, batches A3:A12 and meter_readings B3:B12"
+      ],
+      "status": "resolved",
+      "answer": "All nine unique batch IDs match. Sum increments by batch_id before the one-to-one merge.",
+      "question": null,
+      "candidates": [],
+      "affects": []
+    }
+  ],
+  "charts": [
+    {
+      "id": "daily_rates",
+      "question": "How far apart are the two daily calculations?",
+      "type": "grouped bar",
+      "source_columns": [
+        "steam_kg",
+        "production",
+        "production_unit",
+        "start_at",
+        "batch_id"
+      ],
+      "n_used": 2,
+      "n_excluded": 0,
+      "exclusion_reason": null
+    },
+    {
+      "id": "batch_rates",
+      "question": "Which individual batch rates underlie the daily averages?",
+      "type": "scatter",
+      "source_columns": [
+        "batch_row",
+        "rate"
+      ],
+      "n_used": 8,
+      "n_excluded": 0,
+      "exclusion_reason": null
+    }
+  ],
+  "exclusions": [
+    {
+      "scope": "All metrics and charts",
+      "source_refs": [
+        "utility_batches.xlsx, batches row 12"
+      ],
+      "reason": "Exact duplicate of row 10, removed with user confirmation."
+    },
+    {
+      "scope": "Simple batch averages, batch-rate figure and product comparisons",
+      "source_refs": [
+        "utility_batches.xlsx, batches rows 6",
+        "utility_batches.xlsx, meter_readings rows 7"
+      ],
+      "reason": "Shutdown had 0 t output and 0 kg steam, so its individual rate is undefined. It contributes zero to both daily totals."
+    }
+  ]
+}

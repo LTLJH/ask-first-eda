@@ -1,0 +1,60 @@
+{
+  "case_id": "utility_batches_excel",
+  "source": "input.xlsx",
+  "absolute_tolerance": 0.000001,
+  "precision": "Compare unrounded values with the tolerance above. In prose allow rounding to the stated precision. Row counts and references are exact.",
+  "dates_in_order": ["2026-01-01", "2026-01-02"],
+  "rate_unit": "kg steam/t product",
+  "references": {
+    "locator": "Each pair below gives the original batches row followed by its meter_readings row(s). Batch columns A:G and meter columns A:D use physical Excel coordinates.",
+    "pairs": {"B-0012": [3, [3, 4]], "B-0013": [4, [5]], "B-0014": [5, [6]], "B-0015": [6, [7]], "B-0016": [7, [8]], "B-0017": [8, [9]], "B-0018": [9, [10]], "B-0019": [10, [11]], "B-0020": [11, [12]]},
+    "group_members": {
+      "day1_L": ["B-0012", "B-0013", "B-0016"], "day1_H": ["B-0014"],
+      "day2_L": ["B-0017", "B-0018"], "day2_H": ["B-0019", "B-0020"],
+      "day1_shutdown": ["B-0015"]
+    },
+    "replay": "batches!A12:G12 repeats batches!A10:G10"
+  },
+  "flows": {
+    "B": {
+      "sign_agnostic_metrics": ["mean_batch_minus_plant"],
+      "condition": "Resolved by interview. Assign both steam and production to the local batch start date.",
+      "row_counts": {
+        "batch_records": 10, "distinct_batches": 9, "meter_records": 10, "distinct_readings": 10,
+        "batch_level_meter_totals": 9, "joined_batches": 9, "unmatched_on_either_side": 0,
+        "joined_by_day": [5, 4], "defined_batch_rates_by_day": [4, 4]
+      },
+      "metrics": [
+        {"name": "plant_rate", "date": "2026-01-01", "numerator_kg": 500, "denominator_t": 4.5, "value": 111.1111111111, "source_refs": ["day1_L", "day1_H", "day1_shutdown"]},
+        {"name": "plant_rate", "date": "2026-01-02", "numerator_kg": 4300, "denominator_t": 14, "value": 307.1428571429, "source_refs": ["day2_L", "day2_H"]},
+        {"name": "mean_defined_batch_rate", "date": "2026-01-01", "numerator_sum_of_rates": 600, "denominator_batches": 4, "value": 150, "source_refs": ["day1_L", "day1_H"]},
+        {"name": "mean_defined_batch_rate", "date": "2026-01-02", "numerator_sum_of_rates": 900, "denominator_batches": 4, "value": 225, "source_refs": ["day2_L", "day2_H"]},
+        {"name": "mean_batch_minus_plant", "unit": "kg steam/t product", "values": [38.8888888889, -82.1428571429], "source_refs": ["day1_L", "day1_H", "day1_shutdown", "day2_L", "day2_H"]},
+        {"name": "L_rate", "numerators_kg": [300, 300], "denominators_t": [4, 4], "values": [75, 75], "source_refs": ["day1_L", "day2_L"]},
+        {"name": "H_rate", "numerators_kg": [200, 4000], "denominators_t": [0.5, 10], "values": [400, 400], "source_refs": ["day1_H", "day2_H"]},
+        {"name": "H_share_of_production", "unit": "fraction of tonnes", "numerators_t": [0.5, 10], "denominators_t": [4.5, 14], "values": [0.1111111111, 0.7142857143], "source_refs": ["day1_L", "day1_H", "day1_shutdown", "day2_L", "day2_H"]}
+      ],
+      "optional_metrics": [
+        {"name": "both_days_plant_rate", "unit": "kg steam/t product", "numerator_kg": 4800, "denominator_t": 18.5, "value": 259.4594594595, "source_refs": ["day1_L", "day1_H", "day1_shutdown", "day2_L", "day2_H"]},
+        {"name": "both_days_mean_defined_batch_rate", "unit": "kg steam/t product", "numerator_sum_of_rates": 1500, "denominator_batches": 8, "value": 187.5, "source_refs": ["day1_L", "day1_H", "day2_L", "day2_H"]}
+      ],
+      "must": [
+        "Inspect both sheets and identify their header rows and merged spans. Preserve exact text keys and original coordinates.",
+        "Resolve the meter grain and confirm the midnight rule before selecting daily results. Cite batches row 7 and meter row 8 in the date question. Ask one material question per turn and log choices.",
+        "Identify and account for the repeated batch. Reconcile both inputs and join at batch grain or use an equivalent aggregation that counts each recorded quantity once.",
+        "Convert production to tonnes using each row's unit. Report the ratio of daily totals and the unweighted mean over defined batch rates with their different denominators.",
+        "Keep the valid large H run and both running zero draws. Trace the shutdown's undefined batch rate and distinguish it from a measured zero rate.",
+        "Explain the aggregate movement using H's production share and the unchanged within-product rates. State what the file supports about efficiency."
+      ],
+      "must_not": [
+        "Treat the batch mean as the plant rate, add kg and t directly, or double-count production or steam in the join.",
+        "Assign by reading date after the start-day rule is confirmed, silently drop unusual records, or set an undefined rate to zero.",
+        "Infer deteriorating equipment or process efficiency from the observed aggregate change."
+      ],
+      "critical_failures": [
+        "Claim a loss of production efficiency from the mix shift alone.",
+        "Report a plant rate based on a batch mean, mixed units, duplicated quantities, or exclusion of a confirmed valid run."
+      ]
+    }
+  }
+}

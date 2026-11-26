@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Report gallery · Ask First EDA</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      background: Canvas;
+      color: CanvasText;
+      font: 1rem/1.6 system-ui, sans-serif;
+      margin: 0;
+    }
+    main { max-width: 46rem; margin: 3rem auto; padding: 0 1.25rem; }
+    h1 { line-height: 1.15; margin: 0 0 1.5rem; }
+    h2 { font-size: 1.2rem; margin: 0; }
+    ul { padding-left: 1.4rem; }
+    li + li { margin-top: 1.5rem; }
+    p { margin: .3rem 0; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Ask First EDA report gallery</h1>
+    <p><a href="../../README.md#install">Install</a> <code>skills/ask-first-eda</code> and invoke <code>/ask-first-eda</code>.</p>
+    <ul>
+      <li>
+        <h2><a href="seoul_bike.html">Seoul Bike</a></h2>
+        <p>Compare hourly rental demand to plan bike redistribution staffing.</p>
+        <p>CSV · UCI Machine Learning Repository · CC BY 4.0</p>
+        <p>Easwaramoorthy, S. (2020). Seoul Bike Sharing Demand [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C5F62R.</p>
+        <p>Analyst turns: 4 · Charts: 3 · <a href="../walkthroughs/seoul_bike.md">Walkthrough</a> · <a href="seoul_bike.summary.json">JSON summary</a></p>
+      </li>
+      <li>
+        <h2><a href="factory_utility.html">Factory Utility</a></h2>
+        <p>Compare fresh steam per tonne across two days and quantify the effect of the product mix.</p>
+        <p>Excel (.xlsx) · Synthetic manufacturing evaluation data · MIT</p>
+        <p>Analyst turns: 8 · Charts: 2 · <a href="../walkthroughs/factory_utility.md">Walkthrough</a> · <a href="factory_utility.summary.json">JSON summary</a></p>
+      </li>
+      <li>
+        <h2><a href="support_tickets.html">Support Tickets</a></h2>
+        <p>Measure first-response SLA attainment and find where tickets spend time before resolution.</p>
+        <p>JSONL · Synthetic customer support data · MIT</p>
+        <p>Analyst turns: 5 · Charts: 4 · <a href="../walkthroughs/support_tickets.md">Walkthrough</a> · <a href="support_tickets.summary.json">JSON summary</a></p>
+      </li>
+      <li>
+        <h2><a href="equipment_sensors.html">Equipment Sensors</a></h2>
+        <p>Use current and vibration readings to prioritize pump inspections.</p>
+        <p>Parquet · Synthetic pump sensor data · MIT</p>
+        <p>Analyst turns: 5 · Charts: 3 · <a href="../walkthroughs/equipment_sensors.md">Walkthrough</a> · <a href="equipment_sensors.summary.json">JSON summary</a></p>
+      </li>
+      <li>
+        <h2><a href="messy_production_report.html">Messy Production Report</a></h2>
+        <p>Korean conversation · Clean a multi-sheet Excel workbook and compare production and utilization by line.</p>
+        <p>Excel (.xlsx) · Synthetic production logs · MIT</p>
+        <p>Analyst turns: 7 · Charts: 3 · <a href="../walkthroughs/messy_production_report.md">Walkthrough</a> · <a href="messy_production_report.summary.json">JSON summary</a></p>
+        <p><a href="messy_production_report/cleaned_daily_report.csv">Cleaned CSV</a> · <a href="messy_production_report/clean.py">Cleaning script</a> · <a href="messy_production_report/excluded.csv">Exclusion log</a> · <a href="messy_production_report/audit.json">Audit</a></p>
+      </li>
+    </ul>
+  </main>
+</body>
+</html>

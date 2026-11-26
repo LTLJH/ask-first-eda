@@ -1,0 +1,103 @@
+# Ask First EDA
+
+Ask First EDA는 지표의 계산 기준을 먼저 묻고, 그 기준으로 데이터를 분석해 차트가 담긴 리포트를 만듭니다.
+
+| 시간 | 설비 상태 | 생산량(개) |
+| --- | --- | ---: |
+| 08:00–09:00 | 가동 | 18 |
+| 09:00–10:00 | 정지 | 0 |
+| 10:00–11:00 | 가동 | 22 |
+| 11:00–12:00 | 가동 | 20 |
+
+네 시간 동안 60개를 생산했습니다. 시간당 생산량은 전체 근무 시간 기준으로 15개/h, 가동한 세 시간 기준으로 20개/h입니다.
+
+> 시간당 생산량을 계산할 때 설비가 멈춘 한 시간도 포함할까요?
+
+![리포트 요약 탭 예시](docs/assets/report-preview.png)
+
+## 설치
+
+Python 3.10 이상이 필요합니다. 저장소 루트에서 의존성을 설치하세요.
+
+```sh
+python3 -m pip install -r skills/ask-first-eda/requirements.txt
+python3 -I skills/ask-first-eda/scripts/check_install.py
+```
+
+`<project>`를 스킬을 사용할 프로젝트 경로로 바꾸고, 해당 클라이언트의 명령을 실행하세요.
+
+```sh
+# Claude Code
+mkdir -p "<project>/.claude/skills"
+cp -r skills/ask-first-eda "<project>/.claude/skills/ask-first-eda"
+
+# Codex
+mkdir -p "<project>/.agents/skills"
+cp -r skills/ask-first-eda "<project>/.agents/skills/ask-first-eda"
+```
+
+Claude Code는 사용자 전역 경로인 `~/.claude/skills/ask-first-eda/`도 지원합니다.
+
+이름 변경 전에는 Claude Code 2.1.330과 Codex 0.171.0에서 프로젝트 단위 라우팅 검사를 각각 4건 통과했습니다. 새 이름으로 실제 클라이언트에서 실행하는 라우팅 검사는 남아 있습니다. [설치 스모크 상태](evals/install_smoke.json)
+
+### Claude desktop app
+
+1. 저장소 루트에서 `python scripts/package_skill.py`를 실행하세요.
+2. Claude 데스크톱 앱의 **Settings → Skills**에서 `dist/ask-first-eda.zip`을 업로드하세요. 메뉴 위치가 다르면 **Customize → Skills** 또는 사이드바의 **Plugins**를 확인하세요.
+3. 앱에서는 패키지 설치가 차단될 수 있습니다. Claude에게 업로드한 스킬의 `scripts/check_install.py`를 실행해 사용 가능한 의존성을 확인해 달라고 요청하세요.
+
+### 1분 안에 해보기
+
+`examples/messy_production_report/daily_report.xlsx`를 프로젝트로 복사한 뒤 클라이언트에서 `/ask-first-eda`로 “라인별 생산량과 가동률을 봐 줘”라고 요청하세요.
+
+예상 흐름: 한눈에 보기 → 가동률 분모 질문 → 정제 계획 확인 → 리포트.
+
+## 리포트 예시
+
+스킬은 사용자의 언어로 한 번에 한 가지를 묻습니다. 리포트의 요약 탭에는 분석 결과와 차트가, 세부 탭에는 근거와 계산 과정이 나옵니다.
+
+[리포트 갤러리](docs/gallery/index.html)
+
+- [서울 따릉이](docs/gallery/seoul_bike.html) · [분석 과정](docs/walkthroughs/seoul_bike.md)
+- [배치별 스팀 사용량](docs/gallery/factory_utility.html) · [분석 과정](docs/walkthroughs/factory_utility.md)
+- [고객센터 티켓 SLA](docs/gallery/support_tickets.html) · [분석 과정](docs/walkthroughs/support_tickets.md)
+- [설비 센서](docs/gallery/equipment_sensors.html) · [분석 과정](docs/walkthroughs/equipment_sensors.md)
+- [생산 일보](docs/gallery/messy_production_report.html) · [분석 과정](docs/walkthroughs/messy_production_report.md)
+
+[영업시간 기준에 따른 첫 응답 준수율 차이](docs/walkthroughs/support_tickets.md#sla-clock-comparison)와 [정제 과정에서 제외한 행을 확인하는 방법](docs/walkthroughs/messy_production_report.md#cleaning)을 살펴볼 수 있습니다.
+
+[시스템 구조](docs/architecture.md)
+
+## 지원 입력
+
+갤러리에는 CSV·Excel·JSONL·Parquet 예시가 있습니다.
+
+| 입력 | 지원 범위 |
+| --- | --- |
+| CSV / TSV | 검사 및 분석 |
+| `.xlsx` | 검사 및 분석 |
+| JSON / JSONL | 검사 및 분석 |
+| Parquet | 검사 및 분석 |
+| Markdown 표 | 검사 및 분석 |
+| `.xls` | 감지 가능; 읽기 지원은 보장하지 않음 |
+
+차트에 한글을 표시하려면 한글을 지원하는 시스템 폰트가 필요합니다.
+
+## 하지 않는 일
+
+- 모델 학습 또는 튜닝
+- 자동 가설검정 또는 p-value 산출
+- 인과관계 주장
+- 원본 파일 수정
+
+## 평가
+
+초기 4쌍에서 스킬을 쓴 경우의 총 경과 시간은 스킬 없이 실행한 경우의 4.54배였습니다. 스킬 없이 실행한 쪽은 리포트를 만들지 않아 두 조건의 산출물이 달랐습니다. 이후 평가 도구는 두 조건 모두에 HTML 리포트와 결과 파일을 요구합니다. [A/B 요약](evals/ab_summary.md) · [평가 방법](evals/README.md)
+
+개정판 `a1`의 비캐시 입력과 출력 토큰 합계는 기준 버전(b0) 대비 −29.1%였습니다. 이후 개정판 `a3`의 같은 기준 대비 변화율은 −1.8%였습니다. [개정별 결과](evals/ab_summary.md#lightweight-revision-2026-11-23)
+
+이 수치는 소규모 탐색 결과이며 현재 버전의 성능을 보장하지 않습니다.
+
+## 라이선스
+
+코드는 [MIT](LICENSE) 라이선스를 따릅니다. [예시 데이터](examples/README.md)에는 각각의 라이선스가 적용됩니다.

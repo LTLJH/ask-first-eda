@@ -1,0 +1,52 @@
+{
+  "case_id": "production_next_month",
+  "source": "input.xlsx",
+  "absolute_tolerance": 0.000001,
+  "precision": "Compare utilization using unrounded percentages. Values displayed in the report may be rounded to the stated precision. Row counts and cell addresses must match exactly.",
+  "references": {
+    "sheet": "5월",
+    "prior_summary": "eda-work/delivery/eda_summary.json",
+    "daily_rows": [6, 7, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31],
+    "columns_on_daily_rows": {"date": "A", "A_production": "B", "A_hours": "C", "B_production": "D", "B_hours": "E", "note": "F"},
+    "maintenance": ["5월!B16:C16", "5월!F16"],
+    "breakdown": "5월!D23:F23",
+    "weekly_rows": [8, 14, 20, 26, 32],
+    "monthly_total": "5월!A33:E33",
+    "weekly_discrepancy": {"subtotal": "5월!B14", "daily": "5월!B9:B13", "recorded_kg": 63880, "daily_sum_kg": 63280, "recorded_minus_daily_kg": 600}
+  },
+  "flows": {
+    "B": {
+      "condition": "Confirm reuse of the previous rules, then ask about the Line B entries for May 21. Based on the answer, treat Line B production that day as not applicable, actual operating time as 0 hours, and the planned hours as canceled. Include Line A actuals and planned hours for the same day, as well as planned hours on routine maintenance days.",
+      "row_counts": {
+        "sheet_rows": 33, "preamble_and_header_rows": 5, "daily_rows": 22,
+        "weekly_subtotal_rows": 5, "monthly_total_rows": 1, "line_day_records": 44,
+        "defined_production_days": {"A": 21, "B": 21},
+        "planned_days": {"A": 22, "B": 21}
+      },
+      "metrics": [
+        {"name": "production", "month": "2025-05", "line": "A", "unit": "kg", "value": 266170, "source_refs": ["daily_rows", "A_production", "maintenance"]},
+        {"name": "utilization", "month": "2025-05", "line": "A", "unit": "%", "numerator_hours": 396, "denominator_hours": 440, "value": 90, "source_refs": ["daily_rows", "date", "A_hours", "maintenance"]},
+        {"name": "production", "month": "2025-05", "line": "B", "unit": "kg", "value": 229900, "source_refs": ["daily_rows", "B_production", "breakdown"]},
+        {"name": "utilization", "month": "2025-05", "line": "B", "unit": "%", "numerator_hours": 374, "denominator_hours": 420, "value": 89.04761904761905, "source_refs": ["daily_rows", "date", "B_hours", "breakdown"]}
+      ],
+      "must": [
+        "Verify that the May sheet's header rows, column names and order, and record_path match the monthly tables in the previous summary. A single opening question can confirm reuse of the previous rules.",
+        "Before the first delivery, do not ask the user to answer again about t→kg conversion, the meaning of dashes during routine maintenance, 20 planned hours per day, the date scope of the daily report, or the treatment of subtotals and totals. These are marked resolved in the previous summary.",
+        "Ask one question at a time. Do not treat confirmation of rule reuse as an answer about the new exception. Point to the 0 kg and 0 entries for Line B on May 21 and the equipment breakdown note. Ask how to handle production and planned hours, then finalize the figures after receiving the answer.",
+        "The cleaning audit (audit_clean.py) must pass. Sum actual operating hours and planned hours from the dated rows and make each line's numerator and denominator traceable.",
+        "In the report's Ambiguity Log, cite the previous summary at the relative path eda-work/delivery/eda_summary.json for each reused rule. Record the current interview answer as the source for how the breakdown day was handled.",
+        "Compare the 63,880 kg in 5월!B14 with the 63,280 kg from B9:B13 and report that the recorded subtotal is 600 kg higher. Aggregate monthly actuals from the dated rows."
+      ],
+      "must_not": [
+        "Do not replace dashes with a measured production value of 0 or exclude Line A because of the Line B breakdown.",
+        "Do not double-count subtotals or totals alongside the dated rows, or include previous months' actuals in May figures.",
+        "Do not run the cleaning script from the previous folder."
+      ],
+      "critical_failures": [
+        "Finalize figures that depend on the new exception without asking about it or before receiving an answer.",
+        "Use a denominator based on something other than 20 hours per line per day and the dates in the daily report, ignoring the previous rules, or get a different denominator by mishandling routine maintenance or the confirmed cancellation of Line B's planned hours.",
+        "Add files to the previous eda-work/ folder or modify or delete existing files."
+      ]
+    }
+  }
+}

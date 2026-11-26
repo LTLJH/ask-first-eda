@@ -1,0 +1,29 @@
+{
+  "sheets": {
+    "3월": {
+      "date_rows": 21,
+      "long_rows": 42,
+      "inactive_line_days": 1,
+      "subtotal_rows": [11, 17, 23, 29],
+      "lines": {
+        "A라인": {"production_kg": 258340, "operating_hours": 394, "planned_hours": 420, "utilization": 0.93809524},
+        "B라인": {"production_kg": 211400, "operating_hours": 342, "planned_hours": 420, "utilization": 0.81428571}
+      }
+    },
+    "4월": {
+      "date_rows": 22,
+      "long_rows": 44,
+      "inactive_line_days": 1,
+      "subtotal_rows": [10, 16, 22, 28],
+      "lines": {
+        "A라인": {"production_kg": 264160, "operating_hours": 394, "planned_hours": 440, "utilization": 0.89545455},
+        "B라인": {"production_kg": 237700, "operating_hours": 379, "planned_hours": 440, "utilization": 0.86136364}
+      }
+    }
+  },
+  "long_rows": 86,
+  "inactive_line_days": 2,
+  "subtotal_mismatches": [
+    {"sheet": "3월", "row": 17, "cell": "B17", "line": "A라인", "actual_kg": 61500, "reported_kg": 62500, "difference_kg": 1000}
+  ]
+}

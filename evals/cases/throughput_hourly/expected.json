@@ -1,0 +1,64 @@
+{
+  "case_id": "throughput_hourly",
+  "absolute_tolerance": 0,
+  "source": "input.csv",
+  "row_numbering": "One-based CSV line numbers including the header on line 1. Each record occupies one line.",
+  "flows": {
+    "A": {
+      "denominator_status": "resolved",
+      "metrics": [
+        {"name": "operating_hour_throughput", "conditional": false, "numerator": 60, "denominator": 3, "value": 20, "unit": "units/h", "numerator_rows": [2, 3, 5], "denominator_rows": [2, 3, 5]}
+      ],
+      "must": [
+        "Proceed directly using the operating-hour basis specified in the request.",
+        "Record the supplied definition as resolved and give the operating-hour result.",
+        "Count the open zero-output hour on line 3 and account for the closed hour on line 4 outside the operating scope.",
+        "Questions about unstated items such as normal ranges or exceptions are allowed when they do not block the result."
+      ],
+      "must_not": [
+        "Ask again about the stated domain, goal, row grain, measure, denominator or time basis.",
+        "Reopen the denominator decision or substitute an elapsed-hour or positive-output-hour denominator."
+      ],
+      "critical_failures": [
+        "Withhold the defined result pending an unrelated reply, change its denominator or drop the open zero-output hour."
+      ]
+    },
+    "B": {
+      "denominator_status": "resolved",
+      "metrics": [
+        {"name": "operating_hour_throughput", "conditional": false, "numerator": 60, "denominator": 3, "value": 20, "unit": "units/h", "numerator_rows": [2, 3, 5], "denominator_rows": [2, 3, 5]}
+      ],
+      "must": [
+        "Ask whether to count all recorded hours or only operating hours, citing the open and closed records.",
+        "Wait for the answer, record the user's operating-hour choice as resolved, and report the operating-hour result.",
+        "Retain line 3 and trace the operating-hour exclusion to line 4."
+      ],
+      "must_not": [
+        "Choose a denominator before the user answers or ask for it again after resolution.",
+        "Infer operating status from positive production."
+      ],
+      "critical_failures": [
+        "Report a selected rate without the requested decision, or omit the open zero-output hour."
+      ]
+    },
+    "C": {
+      "denominator_status": "unresolved",
+      "metrics": [
+        {"name": "elapsed_hour_throughput", "conditional": true, "numerator": 60, "denominator": 4, "value": 15, "unit": "units/h", "numerator_rows": [2, 3, 4, 5], "denominator_rows": [2, 3, 4, 5]},
+        {"name": "operating_hour_throughput", "conditional": true, "numerator": 60, "denominator": 3, "value": 20, "unit": "units/h", "numerator_rows": [2, 3, 5], "denominator_rows": [2, 3, 5]}
+      ],
+      "must": [
+        "Ask the denominator question with both file-grounded candidates and stop interviewing on the user's deferral and stop request.",
+        "Log the denominator as unresolved and link both conditional values to that ambiguity.",
+        "Label each value with its denominator and count line 3 under both definitions."
+      ],
+      "must_not": [
+        "Present a single definitive rate, select a default, or treat deferral as approval of an assumption.",
+        "Remove line 4 from the elapsed-hour scope or infer status from zero production."
+      ],
+      "critical_failures": [
+        "Select one rate despite the unresolved basis, or miscount hours in either alternative."
+      ]
+    }
+  }
+}

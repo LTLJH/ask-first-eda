@@ -1,0 +1,489 @@
+{
+  "datasets": [
+    {
+      "id": "text:1",
+      "format": "CSV",
+      "read_ranges": [
+        "SeoulBikeData.csv lines 1\u20138761, with field names on line 1."
+      ],
+      "unread": [],
+      "rows": 8760,
+      "columns": 14,
+      "structure": {
+        "sheet": null,
+        "header_rows": [
+          1
+        ],
+        "record_path": null,
+        "column_names": [
+          "Date",
+          "Rented Bike Count",
+          "Hour",
+          "Temperature(\u00b0C)",
+          "Humidity(%)",
+          "Wind speed (m/s)",
+          "Visibility (10m)",
+          "Dew point temperature(\u00b0C)",
+          "Solar Radiation (MJ/m2)",
+          "Rainfall(mm)",
+          "Snowfall (cm)",
+          "Seasons",
+          "Holiday",
+          "Functioning Day"
+        ]
+      }
+    }
+  ],
+  "row_counts": [
+    {
+      "input": "CSV",
+      "transform": "Read complete table, keep source line and parse book-keeping fields",
+      "output": "Recorded hours",
+      "before": 8760,
+      "after": 8760
+    },
+    {
+      "input": "Recorded hours",
+      "transform": "Select Functioning Day = Yes",
+      "output": "Operating hours",
+      "before": 8760,
+      "after": 8465
+    },
+    {
+      "input": "Recorded hours",
+      "transform": "Select Functioning Day = No",
+      "output": "Suspension hours",
+      "before": 8760,
+      "after": 295
+    },
+    {
+      "input": "Operating hours",
+      "transform": "Group by recorded Hour for the pooled profile",
+      "output": "Pooled hour groups",
+      "before": 8465,
+      "after": 24
+    },
+    {
+      "input": "Operating hours",
+      "transform": "Group by recorded day type and Hour",
+      "output": "Day type hour groups",
+      "before": 8465,
+      "after": 48
+    },
+    {
+      "input": "Operating hours",
+      "transform": "Group by supplied Seasons label",
+      "output": "Season groups",
+      "before": 8465,
+      "after": 4
+    }
+  ],
+  "metrics": [
+    {
+      "name": "Overall mean at 18:00",
+      "definition": "Sum of Rented Bike Count divided by the number of operating rows, one per hour. Highest mean over the 24 recorded hour labels within all operating dates.",
+      "value": 1554.0169971671387,
+      "unit": "completed rentals per operating hour",
+      "numerator": 548568,
+      "denominator": 353,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761, filtered to Hour = 18"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Weekday mean at 18:00",
+      "definition": "Sum of Rented Bike Count divided by the number of operating rows, one per hour. Highest mean over the 24 recorded hour labels within Weekday.",
+      "value": 1724.0517928286852,
+      "unit": "completed rentals per operating hour",
+      "numerator": 432737,
+      "denominator": 251,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761, filtered to Hour = 18 and Day type = Weekday"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Weekend mean at 17:00",
+      "definition": "Sum of Rented Bike Count divided by the number of operating rows, one per hour. Highest mean over the 24 recorded hour labels within Weekend.",
+      "value": 1161.0098039215686,
+      "unit": "completed rentals per operating hour",
+      "numerator": 118423,
+      "denominator": 102,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761, filtered to Hour = 17 and Day type = Weekend"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Overall operating-hour mean",
+      "definition": "Sum of Rented Bike Count divided by the number of operating rows, one per hour. All dates in the source.",
+      "value": 729.1569994093326,
+      "unit": "completed rentals per operating hour",
+      "numerator": 6172314,
+      "denominator": 8465,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Weekday mean at 08:00",
+      "definition": "Sum of Rented Bike Count divided by the number of operating rows, one per hour. Weekday operating rows at Hour = 8.",
+      "value": 1306.01593625498,
+      "unit": "completed rentals per operating hour",
+      "numerator": 327810,
+      "denominator": 251,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761, filtered to Hour = 8 and Day type = Weekday"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Weekend mean at 08:00",
+      "definition": "Sum of Rented Bike Count divided by the number of operating rows, one per hour. Weekend operating rows at Hour = 8.",
+      "value": 420.79411764705884,
+      "unit": "completed rentals per operating hour",
+      "numerator": 42921,
+      "denominator": 102,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761, filtered to Hour = 8 and Day type = Weekend"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Spring operating-hour mean",
+      "definition": "Sum of Rented Bike Count divided by the number of operating rows, one per hour. Operating rows labeled Spring.",
+      "value": 746.2541666666667,
+      "unit": "completed rentals per operating hour",
+      "numerator": 1611909,
+      "denominator": 2160,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761, filtered to Seasons = Spring"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Summer operating-hour mean",
+      "definition": "Sum of Rented Bike Count divided by the number of operating rows, one per hour. Operating rows labeled Summer.",
+      "value": 1034.0733695652175,
+      "unit": "completed rentals per operating hour",
+      "numerator": 2283234,
+      "denominator": 2208,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761, filtered to Seasons = Summer"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Autumn operating-hour mean",
+      "definition": "Sum of Rented Bike Count divided by the number of operating rows, one per hour. Operating rows labeled Autumn.",
+      "value": 924.1104801239029,
+      "unit": "completed rentals per operating hour",
+      "numerator": 1790002,
+      "denominator": 1937,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761, filtered to Seasons = Autumn"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Winter operating-hour mean",
+      "definition": "Sum of Rented Bike Count divided by the number of operating rows, one per hour. Operating rows labeled Winter.",
+      "value": 225.5412037037037,
+      "unit": "completed rentals per operating hour",
+      "numerator": 487169,
+      "denominator": 2160,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761, filtered to Seasons = Winter"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "25th percentile",
+      "definition": "Quantile 0.25 of individual operating-hour counts, with linear interpolation.",
+      "value": 214.0,
+      "unit": "completed rentals per operating hour",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Median operating hour",
+      "definition": "Quantile 0.5 of individual operating-hour counts, with linear interpolation.",
+      "value": 542.0,
+      "unit": "completed rentals per operating hour",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "75th percentile",
+      "definition": "Quantile 0.75 of individual operating-hour counts, with linear interpolation.",
+      "value": 1084.0,
+      "unit": "completed rentals per operating hour",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "90th percentile",
+      "definition": "Quantile 0.9 of individual operating-hour counts, with linear interpolation.",
+      "value": 1696.6000000000004,
+      "unit": "completed rentals per operating hour",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "SeoulBikeData.csv lines 2\u20133145, 3170\u20133841, 3866\u20136985, 7034\u20137225, 7250\u20137273, 7298\u20137321, 7346\u20137369, 7394\u20137417, 7425\u20137489, 7514\u20138089, 8114\u20138161, 8186\u20138233, 8258\u20138761"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Service suspension hours",
+      "definition": "Count of No rows, one per recorded hour.",
+      "value": 295,
+      "unit": "hours",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "SeoulBikeData.csv lines 3146\u20133169, 3842\u20133865, 6986\u20137033, 7226\u20137249, 7274\u20137297, 7322\u20137345, 7370\u20137393, 7418\u20137424, 7490\u20137513, 8090\u20138113, 8162\u20138185, 8234\u20138257"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Dates affected by suspensions",
+      "definition": "Count of distinct recorded dates with at least one No hour.",
+      "value": 13,
+      "unit": "recorded dates",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "SeoulBikeData.csv lines 3146\u20133169, 3842\u20133865, 6986\u20137033, 7226\u20137249, 7274\u20137297, 7322\u20137345, 7370\u20137393, 7418\u20137424, 7490\u20137513, 8090\u20138113, 8162\u20138185, 8234\u20138257"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Fully suspended dates",
+      "definition": "Count of recorded dates with all 24 rows marked No.",
+      "value": 12,
+      "unit": "recorded dates",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "SeoulBikeData.csv lines 3146\u20133169, 3842\u20133865, 6986\u20137033, 7226\u20137249, 7274\u20137297, 7322\u20137345, 7370\u20137393, 7418\u20137424, 7490\u20137513, 8090\u20138113, 8162\u20138185, 8234\u20138257"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Maximum observed hourly count",
+      "definition": "Largest single operating-hour count in the supplied year.",
+      "value": 3556,
+      "unit": "completed rentals",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "SeoulBikeData.csv line 4820"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    }
+  ],
+  "ambiguity_log": [
+    {
+      "id": "A01",
+      "checklist_item": "Business process and recording stage",
+      "question": "Does Rented Bike Count represent rentals that started during the listed hour?",
+      "file_evidence": [
+        "SeoulBikeData.csv line 2 contains Rented Bike Count = 254"
+      ],
+      "candidates": [
+        "Starts",
+        "Completions"
+      ],
+      "status": "resolved",
+      "answer": "User confirmed completed systemwide rentals per recorded hour. Rental start timing is unverified.",
+      "affects": [
+        "Interpretation of observed volume"
+      ]
+    },
+    {
+      "id": "A02",
+      "checklist_item": "Decision",
+      "question": null,
+      "file_evidence": [
+        "SeoulBikeData.csv lines 2\u20138761"
+      ],
+      "candidates": [],
+      "status": "resolved",
+      "answer": "User requested typical demand comparisons for redistribution staffing.",
+      "affects": [
+        "Coverage windows"
+      ]
+    },
+    {
+      "id": "A03",
+      "checklist_item": "Observation unit",
+      "question": null,
+      "file_evidence": [
+        "SeoulBikeData.csv lines 2\u20138761"
+      ],
+      "candidates": [],
+      "status": "resolved",
+      "answer": "One systemwide count per distinct Date and Hour, verified across 365 dates and confirmed by the user.",
+      "affects": [
+        "Hourly denominators"
+      ]
+    },
+    {
+      "id": "A04",
+      "checklist_item": "Count unit and eligible denominator",
+      "question": "Should operating-hour comparisons include No hours?",
+      "file_evidence": [
+        "SeoulBikeData.csv line 3146 has Functioning Day = No and a zero count"
+      ],
+      "candidates": [
+        "Yes hours only",
+        "All hours"
+      ],
+      "status": "resolved",
+      "answer": "User selected operating hours for demand comparisons and asked to count suspension hours separately.",
+      "affects": [
+        "Operating-hour means",
+        "Distribution"
+      ]
+    },
+    {
+      "id": "A05",
+      "checklist_item": "Time basis",
+      "question": "Should Date and Hour be interpreted as Seoul local time?",
+      "file_evidence": [
+        "SeoulBikeData.csv line 2 has Date and Hour fields with no UTC offset"
+      ],
+      "candidates": [
+        "Seoul local time",
+        "Another or unknown clock basis"
+      ],
+      "status": "unresolved",
+      "answer": "User does not know the time zone. The analysis groups by recorded date and hour labels.",
+      "affects": [
+        "Mapping recorded clock hours to local roster windows"
+      ]
+    },
+    {
+      "id": "A06",
+      "checklist_item": "Exceptions and normal ranges",
+      "question": null,
+      "file_evidence": [
+        "SeoulBikeData.csv lines 3146\u20133169, 3842\u20133865, 6986\u20137033, 7226\u20137249, 7274\u20137297, 7322\u20137345, 7370\u20137393, 7418\u20137424, 7490\u20137513, 8090\u20138113, 8162\u20138185, 8234\u20138257",
+        "SeoulBikeData.csv line 4820 contains the largest observed count"
+      ],
+      "candidates": [],
+      "status": "resolved",
+      "answer": "User confirmed No marks suspension. The exploratory high-volume flag retains all observations and uses the operating distribution.",
+      "affects": [
+        "Suspension summary",
+        "High-volume diagnostic"
+      ]
+    },
+    {
+      "id": "A07",
+      "checklist_item": "Missing values and zeros",
+      "question": null,
+      "file_evidence": [
+        "SeoulBikeData.csv lines 2\u20138761"
+      ],
+      "candidates": [],
+      "status": "resolved",
+      "answer": "No blank cells. Every zero in the rental count occurs on a No row. These rows are used for suspension time and are outside the volume analysis.",
+      "affects": [
+        "Operating-hour scope"
+      ]
+    },
+    {
+      "id": "A08",
+      "checklist_item": "Join keys",
+      "question": null,
+      "file_evidence": [
+        "SeoulBikeData.csv lines 2\u20138761"
+      ],
+      "candidates": [],
+      "status": "not_applicable",
+      "answer": "Single table with no joins.",
+      "affects": []
+    }
+  ],
+  "charts": [
+    {
+      "id": "hourly-profile",
+      "question": "When are completed rentals most concentrated?",
+      "type": "line profile",
+      "source_columns": [
+        "Date",
+        "Hour",
+        "Rented Bike Count",
+        "Functioning Day"
+      ],
+      "n_used": 8465,
+      "n_excluded": 295,
+      "exclusion_reason": "Functioning Day = No on 295 rows."
+    },
+    {
+      "id": "hourly-observations",
+      "question": "How much do individual observations vary by recorded hour?",
+      "type": "scatter",
+      "source_columns": [
+        "Hour",
+        "Rented Bike Count"
+      ],
+      "n_used": 8465,
+      "n_excluded": 295,
+      "exclusion_reason": "Functioning Day = No on 295 rows."
+    },
+    {
+      "id": "hourly-distribution",
+      "question": "How common are high-volume operating hours?",
+      "type": "histogram",
+      "source_columns": [
+        "Rented Bike Count"
+      ],
+      "n_used": 8465,
+      "n_excluded": 295,
+      "exclusion_reason": "Functioning Day = No on 295 rows."
+    }
+  ],
+  "exclusions": [
+    {
+      "scope": "Operating-hour demand analysis and all three figures",
+      "source_refs": [
+        "SeoulBikeData.csv lines 3146\u20133169, 3842\u20133865, 6986\u20137033, 7226\u20137249, 7274\u20137297, 7322\u20137345, 7370\u20137393, 7418\u20137424, 7490\u20137513, 8090\u20138113, 8162\u20138185, 8234\u20138257"
+      ],
+      "reason": "Functioning Day = No on 295 rows."
+    }
+  ]
+}

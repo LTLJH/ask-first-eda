@@ -1,0 +1,426 @@
+{
+  "datasets": [
+    {
+      "id": "3\uc6d4",
+      "format": "xlsx",
+      "rows": 21,
+      "columns": 6,
+      "unread": [],
+      "read_ranges": [
+        "daily_report.xlsx 3\uc6d4!A1:F31 \uc804\uccb4, \uba38\ub9ac\uae00 4~5\ud589, \ubcd1\ud569 B4:C4 \ubc0f D4:E4"
+      ],
+      "structure": {
+        "sheet": "3\uc6d4",
+        "header_rows": [
+          4,
+          5
+        ],
+        "record_path": null,
+        "column_names": [
+          "\uc77c\uc790",
+          "A\ub77c\uc778 / \uc0dd\uc0b0\ub7c9",
+          "A\ub77c\uc778 / \uac00\ub3d9\uc2dc\uac04",
+          "B\ub77c\uc778 / \uc0dd\uc0b0\ub7c9",
+          "B\ub77c\uc778 / \uac00\ub3d9\uc2dc\uac04",
+          "\ube44\uace0"
+        ]
+      }
+    },
+    {
+      "id": "4\uc6d4",
+      "format": "xlsx",
+      "rows": 22,
+      "columns": 6,
+      "unread": [],
+      "read_ranges": [
+        "daily_report.xlsx 4\uc6d4!A1:F32 \uc804\uccb4, \uba38\ub9ac\uae00 4~5\ud589, \ubcd1\ud569 B4:C4 \ubc0f D4:E4"
+      ],
+      "structure": {
+        "sheet": "4\uc6d4",
+        "header_rows": [
+          4,
+          5
+        ],
+        "record_path": null,
+        "column_names": [
+          "\uc77c\uc790",
+          "A\ub77c\uc778 / \uc0dd\uc0b0\ub7c9",
+          "A\ub77c\uc778 / \uac00\ub3d9\uc2dc\uac04",
+          "B\ub77c\uc778 / \uc0dd\uc0b0\ub7c9",
+          "B\ub77c\uc778 / \uac00\ub3d9\uc2dc\uac04",
+          "\ube44\uace0"
+        ]
+      }
+    }
+  ],
+  "row_counts": [
+    {
+      "input": "daily_report.xlsx",
+      "transform": "\ub450 \uc2dc\ud2b8\uc758 \ubb3c\ub9ac\uc801 \uc140 \ubc94\uc704\ub97c \uc77d\uc74c",
+      "output": "\uc6d0\ubcf8 \ud589",
+      "before": 63,
+      "after": 63
+    },
+    {
+      "input": "\uc6d0\ubcf8 \ud589",
+      "transform": "\ub0a0\uc9dc \ud589 \uc120\ud0dd, \ub2e8\uc704\ub97c kg\uc73c\ub85c \ud1b5\uc77c, \ubcf4\uc804\uc77c \ucc98\ub9ac",
+      "output": "\uc815\ub9ac CSV",
+      "before": 63,
+      "after": 43
+    },
+    {
+      "input": "\uc815\ub9ac CSV",
+      "transform": "\ub0a0\uc9dc \ud589 \ubc94\uc704\uc640 \uc2e4\uc81c\u00b7\uacc4\ud68d \uac00\ub3d9\uc2dc\uac04\uc744 \uacf5\uc720\ud558\ub294 \uc6d4\u00b7\ub77c\uc778\ubcc4 \uc9d1\uacc4",
+      "output": "\uc6d4\u00b7\ub77c\uc778 \uc9d1\uacc4",
+      "before": 43,
+      "after": 4
+    }
+  ],
+  "metrics": [
+    {
+      "name": "3\uc6d4 A\ub77c\uc778 \uc0dd\uc0b0\ub7c9",
+      "definition": "21\uac1c \ub0a0\uc9dc \ud589\uc5d0 \uae30\ub85d\ub41c \uc0dd\uc0b0\ub7c9 \ud569\uacc4. t\ub294 1,000\uc744 \uacf1\ud574 kg\uc73c\ub85c \ud658\uc0b0. \ud569\uacc4 \uc9c0\ud45c\uc5d0\ub294 \ubd84\uc790\uc640 \ubd84\ubaa8\uac00 \uc801\uc6a9\ub418\uc9c0 \uc54a\uc74c.",
+      "numerator": null,
+      "denominator": null,
+      "value": 258340,
+      "unit": "kg",
+      "depends_on_ambiguity_ids": [],
+      "condition": null,
+      "source_refs": [
+        "daily_report.xlsx 3\uc6d4!B6:B10, B12:B16, B18:B22, B24:B28, B30"
+      ]
+    },
+    {
+      "name": "3\uc6d4 A\ub77c\uc778 \uac00\ub3d9\ub960",
+      "definition": "\uc2e4\uc81c \uac00\ub3d9\uc2dc\uac04 394\uc2dc\uac04 \u00f7 \uacc4\ud68d \uac00\ub3d9\uc2dc\uac04 420\uc2dc\uac04 \u00d7 100. \uacc4\ud68d\uc740 \ub0a0\uc9dc \ud589 21\uac1c \u00d7 20\uc2dc\uac04\uc774\uba70 \ubcf4\uc804\uc77c \ud3ec\ud568.",
+      "numerator": 394,
+      "denominator": 420,
+      "value": 93.80952380952381,
+      "unit": "%",
+      "depends_on_ambiguity_ids": [],
+      "condition": null,
+      "source_refs": [
+        "daily_report.xlsx 3\uc6d4!C6:C10, C12:C16, C18:C22, C24:C28, C30",
+        "daily_report.xlsx 3\uc6d4!A6:A10, A12:A16, A18:A22, A24:A28, A30"
+      ]
+    },
+    {
+      "name": "3\uc6d4 B\ub77c\uc778 \uc0dd\uc0b0\ub7c9",
+      "definition": "20\uac1c \ub0a0\uc9dc \ud589\uc5d0 \uae30\ub85d\ub41c \uc0dd\uc0b0\ub7c9 \ud569\uacc4. t\ub294 1,000\uc744 \uacf1\ud574 kg\uc73c\ub85c \ud658\uc0b0. \ud569\uacc4 \uc9c0\ud45c\uc5d0\ub294 \ubd84\uc790\uc640 \ubd84\ubaa8\uac00 \uc801\uc6a9\ub418\uc9c0 \uc54a\uc74c.",
+      "numerator": null,
+      "denominator": null,
+      "value": 211400,
+      "unit": "kg",
+      "depends_on_ambiguity_ids": [],
+      "condition": null,
+      "source_refs": [
+        "daily_report.xlsx 3\uc6d4!D6:D10, D12:D13, D15:D16, D18:D22, D24:D28, D30"
+      ]
+    },
+    {
+      "name": "3\uc6d4 B\ub77c\uc778 \uac00\ub3d9\ub960",
+      "definition": "\uc2e4\uc81c \uac00\ub3d9\uc2dc\uac04 342\uc2dc\uac04 \u00f7 \uacc4\ud68d \uac00\ub3d9\uc2dc\uac04 420\uc2dc\uac04 \u00d7 100. \uacc4\ud68d\uc740 \ub0a0\uc9dc \ud589 21\uac1c \u00d7 20\uc2dc\uac04\uc774\uba70 \ubcf4\uc804\uc77c \ud3ec\ud568.",
+      "numerator": 342,
+      "denominator": 420,
+      "value": 81.42857142857143,
+      "unit": "%",
+      "depends_on_ambiguity_ids": [],
+      "condition": null,
+      "source_refs": [
+        "daily_report.xlsx 3\uc6d4!E6:E10, E12:E16, E18:E22, E24:E28, E30",
+        "daily_report.xlsx 3\uc6d4!A6:A10, A12:A16, A18:A22, A24:A28, A30"
+      ]
+    },
+    {
+      "name": "4\uc6d4 A\ub77c\uc778 \uc0dd\uc0b0\ub7c9",
+      "definition": "21\uac1c \ub0a0\uc9dc \ud589\uc5d0 \uae30\ub85d\ub41c \uc0dd\uc0b0\ub7c9 \ud569\uacc4. t\ub294 1,000\uc744 \uacf1\ud574 kg\uc73c\ub85c \ud658\uc0b0. \ud569\uacc4 \uc9c0\ud45c\uc5d0\ub294 \ubd84\uc790\uc640 \ubd84\ubaa8\uac00 \uc801\uc6a9\ub418\uc9c0 \uc54a\uc74c.",
+      "numerator": null,
+      "denominator": null,
+      "value": 264160,
+      "unit": "kg",
+      "depends_on_ambiguity_ids": [],
+      "condition": null,
+      "source_refs": [
+        "daily_report.xlsx 4\uc6d4!B6:B9, B11, B13:B15, B17:B21, B23:B27, B29:B31"
+      ]
+    },
+    {
+      "name": "4\uc6d4 A\ub77c\uc778 \uac00\ub3d9\ub960",
+      "definition": "\uc2e4\uc81c \uac00\ub3d9\uc2dc\uac04 394\uc2dc\uac04 \u00f7 \uacc4\ud68d \uac00\ub3d9\uc2dc\uac04 440\uc2dc\uac04 \u00d7 100. \uacc4\ud68d\uc740 \ub0a0\uc9dc \ud589 22\uac1c \u00d7 20\uc2dc\uac04\uc774\uba70 \ubcf4\uc804\uc77c \ud3ec\ud568.",
+      "numerator": 394,
+      "denominator": 440,
+      "value": 89.54545454545455,
+      "unit": "%",
+      "depends_on_ambiguity_ids": [],
+      "condition": null,
+      "source_refs": [
+        "daily_report.xlsx 4\uc6d4!C6:C9, C11:C15, C17:C21, C23:C27, C29:C31",
+        "daily_report.xlsx 4\uc6d4!A6:A9, A11:A15, A17:A21, A23:A27, A29:A31"
+      ]
+    },
+    {
+      "name": "4\uc6d4 B\ub77c\uc778 \uc0dd\uc0b0\ub7c9",
+      "definition": "22\uac1c \ub0a0\uc9dc \ud589\uc5d0 \uae30\ub85d\ub41c \uc0dd\uc0b0\ub7c9 \ud569\uacc4. t\ub294 1,000\uc744 \uacf1\ud574 kg\uc73c\ub85c \ud658\uc0b0. \ud569\uacc4 \uc9c0\ud45c\uc5d0\ub294 \ubd84\uc790\uc640 \ubd84\ubaa8\uac00 \uc801\uc6a9\ub418\uc9c0 \uc54a\uc74c.",
+      "numerator": null,
+      "denominator": null,
+      "value": 237700,
+      "unit": "kg",
+      "depends_on_ambiguity_ids": [],
+      "condition": null,
+      "source_refs": [
+        "daily_report.xlsx 4\uc6d4!D6:D9, D11:D15, D17:D21, D23:D27, D29:D31"
+      ]
+    },
+    {
+      "name": "4\uc6d4 B\ub77c\uc778 \uac00\ub3d9\ub960",
+      "definition": "\uc2e4\uc81c \uac00\ub3d9\uc2dc\uac04 379\uc2dc\uac04 \u00f7 \uacc4\ud68d \uac00\ub3d9\uc2dc\uac04 440\uc2dc\uac04 \u00d7 100. \uacc4\ud68d\uc740 \ub0a0\uc9dc \ud589 22\uac1c \u00d7 20\uc2dc\uac04\uc774\uba70 \ubcf4\uc804\uc77c \ud3ec\ud568.",
+      "numerator": 379,
+      "denominator": 440,
+      "value": 86.13636363636363,
+      "unit": "%",
+      "depends_on_ambiguity_ids": [],
+      "condition": null,
+      "source_refs": [
+        "daily_report.xlsx 4\uc6d4!E6:E9, E11:E15, E17:E21, E23:E27, E29:E31",
+        "daily_report.xlsx 4\uc6d4!A6:A9, A11:A15, A17:A21, A23:A27, A29:A31"
+      ]
+    }
+  ],
+  "ambiguity_log": [
+    {
+      "id": "A01",
+      "checklist_item": "\uc5c5\ubb34 \uacfc\uc815",
+      "question": null,
+      "file_evidence": [
+        "daily_report.xlsx 3\uc6d4!A1:F31, 4\uc6d4!A1:F32"
+      ],
+      "candidates": [],
+      "answer": "\uc0ac\uc6a9\uc790 \uc124\uba85\uacfc \uc2dc\ud2b8 \uc81c\ubaa9\uc5d0\uc11c \uc0dd\uc0b0 \ud604\uc7a5 \uc77c\ubcf4\uc784\uc744 \ud655\uc778.",
+      "affects": [],
+      "status": "resolved"
+    },
+    {
+      "id": "A02",
+      "checklist_item": "\ubd84\uc11d \ubaa9\uc801\uacfc \ud65c\uc6a9",
+      "question": "\ub77c\uc778\ubcc4 \uc6d4 \uc0dd\uc0b0\ub7c9\uacfc \uac00\ub3d9\ub960\uc744 \ube44\uad50\ud55c \uacb0\uacfc\ub97c \uc5b4\ub514\uc5d0 \uc4f0\uc2e4 \uc608\uc815\uc778\uac00\uc694?",
+      "file_evidence": [
+        "daily_report.xlsx 3\uc6d4!A1:F31, 4\uc6d4!A1:F32"
+      ],
+      "candidates": [
+        "\uc6d4\uac04 \uc2e4\uc801 \uacf5\uc720",
+        "\uc0dd\uc0b0\uacc4\ud68d \uc870\uc815",
+        "\uc124\ube44 \ubcf4\uc804 \uac80\ud1a0"
+      ],
+      "answer": "\ub77c\uc778\ubcc4 \ucd94\uc774 \ube44\uad50 \uc694\uccad. \ud65c\uc6a9\ucc98\ub294 \uc0ac\uc6a9\uc790 \ub2f5\ubcc0 \u2018\ubaa8\ub974\uaca0\uc5b4\uc694\u2019\ub85c \ubbf8\uc815.",
+      "affects": [
+        "\uacb0\uacfc \ud65c\uc6a9\ucc98"
+      ],
+      "status": "unresolved"
+    },
+    {
+      "id": "A03",
+      "checklist_item": "\ud589\uacfc \uba38\ub9ac\uae00",
+      "question": null,
+      "file_evidence": [
+        "daily_report.xlsx 3\uc6d4\u00b74\uc6d4!A4:F5"
+      ],
+      "candidates": [
+        "\ub0a0\uc9dc \ud589",
+        "\uc18c\uacc4\u00b7\ud569\uacc4 \ud3ec\ud568"
+      ],
+      "answer": "\uc0ac\uc6a9\uc790\uac00 \ub0a0\uc9dc\uac00 \uc788\ub294 \ud589\uc744 \uc9c0\uc815. \uc6d0\ubcf8 4\ud589\uc740 \uadf8\ub8f9\uba85\uacfc \uc77c\uc790\u00b7\ube44\uace0, 5\ud589\uc740 \ub77c\uc778\ubcc4 \ud544\ub4dc\uba85. \ub0a0\uc9dc \ud55c \ud589\uc5d0 \ub450 \ub77c\uc778 \uae30\ub85d.",
+      "affects": [],
+      "status": "resolved"
+    },
+    {
+      "id": "A04",
+      "checklist_item": "\uac00\ub3d9\ub960\uacfc \ubd84\ubaa8",
+      "question": null,
+      "file_evidence": [
+        "daily_report.xlsx 3\uc6d4!C9"
+      ],
+      "candidates": [
+        "\ud558\ub8e8 24\uc2dc\uac04",
+        "\ub77c\uc778\ubcc4 \uacc4\ud68d \uac00\ub3d9\uc2dc\uac04"
+      ],
+      "answer": "\uc0ac\uc6a9\uc790\uac00 \ub0a0\uc9dc \ud589\ub9c8\ub2e4 \ub77c\uc778\ub2f9 20\uc2dc\uac04\uc744 \uc9c0\uc815. \uc6d4\ubcc4 \uc2e4\uc81c \ud569\uacc4 \u00f7 \uc6d4\ubcc4 \uacc4\ud68d \ud569\uacc4. \ubcf4\uc804\uc77c \ud3ec\ud568.",
+      "affects": [
+        "\uc6d4 \uac00\ub3d9\ub960"
+      ],
+      "status": "resolved"
+    },
+    {
+      "id": "A04b",
+      "checklist_item": "\uc0dd\uc0b0\ub7c9\uacfc \ub2e8\uc704",
+      "question": null,
+      "file_evidence": [
+        "daily_report.xlsx 3\uc6d4!B6:B7"
+      ],
+      "candidates": [
+        "kg",
+        "t"
+      ],
+      "answer": "\uc0ac\uc6a9\uc790\uac00 t\uc5d0 1,000\uc744 \uacf1\ud574 kg\uc73c\ub85c \ud569\uc0b0\ud558\uace0 \uc77c\ubcc4 \ucd94\uc774\uc640 \uc6d4\ubcc4 \ud569\uacc4\ub97c \ud45c\uc2dc\ud558\ub3c4\ub85d \ud655\uc778.",
+      "affects": [
+        "\uc0dd\uc0b0\ub7c9"
+      ],
+      "status": "resolved"
+    },
+    {
+      "id": "A05",
+      "checklist_item": "\uc2dc\uac04 \uae30\uc900",
+      "question": null,
+      "file_evidence": [
+        "daily_report.xlsx 3\uc6d4!A1:F31, 4\uc6d4!A1:F32"
+      ],
+      "candidates": [
+        "\uc77c\ubcf4\uc758 \uc77c\uc790 \ubc0f \ud574\ub2f9 \uc6d4"
+      ],
+      "answer": "\uc0ac\uc6a9\uc790\uac00 \ub0a0\uc9dc \ud589\uc744 \uc774\uc6a9\ud574 \uc77c\ubcc4\uacfc \uc6d4\ubcc4 \uc9d1\uacc4\ub97c \uc9c0\uc815. \uc6d0\ubcf8 \uc81c\ubaa9\uc758 \uc5f0\ub3c4\ub294 2025\ub144.",
+      "affects": [],
+      "status": "resolved"
+    },
+    {
+      "id": "A06",
+      "checklist_item": "\uc815\uae30 \ubcf4\uc804\uc77c \uac00\ub3d9\uc2dc\uac04",
+      "question": null,
+      "file_evidence": [
+        "daily_report.xlsx 3\uc6d4!E14",
+        "daily_report.xlsx 4\uc6d4!C12"
+      ],
+      "candidates": [
+        "0\uc2dc\uac04",
+        "\ubbf8\uae30\ub85d"
+      ],
+      "answer": "\uc0ac\uc6a9\uc790\uac00 \ub450 \ubcf4\uc804\uc77c \ubaa8\ub450 \uc2e4\uc81c \uac00\ub3d9 0\uc2dc\uac04\uc73c\ub85c \ud655\uc778.",
+      "affects": [
+        "\uc6d4 \uac00\ub3d9\ub960"
+      ],
+      "status": "resolved"
+    },
+    {
+      "id": "A07",
+      "checklist_item": "\uc815\uae30 \ubcf4\uc804\uc77c \uc0dd\uc0b0\ub7c9",
+      "question": null,
+      "file_evidence": [
+        "daily_report.xlsx 3\uc6d4!D14",
+        "daily_report.xlsx 4\uc6d4!B12"
+      ],
+      "candidates": [
+        "0 kg",
+        "\ud574\ub2f9 \uc5c6\uc74c"
+      ],
+      "answer": "\uc0ac\uc6a9\uc790\uac00 \ub450 \uc0dd\uc0b0\ub7c9 \ubaa8\ub450 \ud574\ub2f9 \uc5c6\uc74c\uc73c\ub85c \ud655\uc778. \ube48 \uc0dd\uc0b0\ub7c9\uacfc \uc0c1\ud0dc \uc5f4\ub85c \uae30\ub85d\ud558\uace0 \ud569\uacc4\uc5d0\uc11c \uc81c\uc678.",
+      "affects": [
+        "\uc77c\ubcc4 \uc0dd\uc0b0\ub7c9",
+        "\uc0dd\uc0b0\ub7c9 \uad00\uce21 \uac74\uc218"
+      ],
+      "status": "resolved"
+    },
+    {
+      "id": "A08",
+      "checklist_item": "\uc870\uc778 \ud0a4",
+      "question": null,
+      "file_evidence": [
+        "daily_report.xlsx 3\uc6d4!A1:F31, 4\uc6d4!A1:F32"
+      ],
+      "candidates": [],
+      "answer": "\uac19\uc740 \uad6c\uc870\uc778 \uc6d4\ubcc4 \uc2dc\ud2b8\ub97c \ud589 \ubc29\ud5a5\uc73c\ub85c \uc5f0\uacb0\ud588\uc73c\uba70 \uc678\ubd80 \ud45c\uc640\uc758 \uc870\uc778\uc740 \uc5c6\uc74c.",
+      "affects": [],
+      "status": "not_applicable"
+    }
+  ],
+  "charts": [
+    {
+      "id": "monthly_production",
+      "question": "3\uc6d4\uacfc 4\uc6d4\uc758 \ub77c\uc778\ubcc4 \uc6d4 \uc0dd\uc0b0\ub7c9\uc740 \uc5b4\ub5bb\uac8c \ub2ec\ub77c\uc84c\ub098\uc694?",
+      "type": "grouped_bar",
+      "source_columns": [
+        "\uc77c\uc790",
+        "A\ub77c\uc778 \uc0dd\uc0b0\ub7c9",
+        "B\ub77c\uc778 \uc0dd\uc0b0\ub7c9"
+      ],
+      "n_used": 84,
+      "n_excluded": 2,
+      "exclusion_reason": "\uc815\uae30 \ubcf4\uc804\uc77c \uc0dd\uc0b0\ub7c9 \ud574\ub2f9 \uc5c6\uc74c"
+    },
+    {
+      "id": "monthly_utilization",
+      "question": "3\uc6d4\uacfc 4\uc6d4\uc758 \ub77c\uc778\ubcc4 \uc6d4 \uac00\ub3d9\ub960\uc740 \uc5b4\ub5bb\uac8c \ub2ec\ub77c\uc84c\ub098\uc694?",
+      "type": "grouped_bar",
+      "source_columns": [
+        "\uc77c\uc790",
+        "A\ub77c\uc778 \uac00\ub3d9\uc2dc\uac04",
+        "B\ub77c\uc778 \uac00\ub3d9\uc2dc\uac04"
+      ],
+      "n_used": 86,
+      "n_excluded": 0,
+      "exclusion_reason": null
+    },
+    {
+      "id": "daily_production",
+      "question": "\uac01 \ub77c\uc778\uc758 \uc77c \uc0dd\uc0b0\ub7c9\uc740 \uc5b4\ub5bb\uac8c \uc6c0\uc9c1\uc600\ub098\uc694?",
+      "type": "line_time",
+      "source_columns": [
+        "\uc77c\uc790",
+        "A\ub77c\uc778 \uc0dd\uc0b0\ub7c9",
+        "B\ub77c\uc778 \uc0dd\uc0b0\ub7c9"
+      ],
+      "n_used": 84,
+      "n_excluded": 2,
+      "exclusion_reason": "\uc815\uae30 \ubcf4\uc804\uc77c \uc0dd\uc0b0\ub7c9 \ud574\ub2f9 \uc5c6\uc74c"
+    }
+  ],
+  "exclusions": [
+    {
+      "scope": "\ubaa8\ub4e0 \uc9c0\ud45c",
+      "source_refs": [
+        "daily_report.xlsx 3\uc6d4 \uc2dc\ud2b8 1, 2, 3, 4, 5\ud589"
+      ],
+      "reason": "\uc77c\uc790 \uc5c6\uc74c (\uc81c\ubaa9\u00b7\uacb0\uc7ac\u00b7\ube48 \ud589\u00b7\uba38\ub9ac\uae00)"
+    },
+    {
+      "scope": "\ubaa8\ub4e0 \uc9c0\ud45c",
+      "source_refs": [
+        "daily_report.xlsx 3\uc6d4 \uc2dc\ud2b8 11, 17, 23, 29\ud589"
+      ],
+      "reason": "\uc8fc\uac04 \uc18c\uacc4"
+    },
+    {
+      "scope": "\ubaa8\ub4e0 \uc9c0\ud45c",
+      "source_refs": [
+        "daily_report.xlsx 3\uc6d4 \uc2dc\ud2b8 31\ud589"
+      ],
+      "reason": "\uc6d4 \ud569\uacc4"
+    },
+    {
+      "scope": "\ubaa8\ub4e0 \uc9c0\ud45c",
+      "source_refs": [
+        "daily_report.xlsx 4\uc6d4 \uc2dc\ud2b8 1, 2, 3, 4, 5\ud589"
+      ],
+      "reason": "\uc77c\uc790 \uc5c6\uc74c (\uc81c\ubaa9\u00b7\uacb0\uc7ac\u00b7\ube48 \ud589\u00b7\uba38\ub9ac\uae00)"
+    },
+    {
+      "scope": "\ubaa8\ub4e0 \uc9c0\ud45c",
+      "source_refs": [
+        "daily_report.xlsx 4\uc6d4 \uc2dc\ud2b8 10, 16, 22, 28\ud589"
+      ],
+      "reason": "\uc8fc\uac04 \uc18c\uacc4"
+    },
+    {
+      "scope": "\ubaa8\ub4e0 \uc9c0\ud45c",
+      "source_refs": [
+        "daily_report.xlsx 4\uc6d4 \uc2dc\ud2b8 32\ud589"
+      ],
+      "reason": "\uc6d4 \ud569\uacc4"
+    },
+    {
+      "scope": "\uc0dd\uc0b0\ub7c9\ub9cc",
+      "source_refs": [
+        "daily_report.xlsx 3\uc6d4!D14",
+        "daily_report.xlsx 4\uc6d4!B12"
+      ],
+      "reason": "\uc815\uae30 \ubcf4\uc804\uc77c \uc0dd\uc0b0\ub7c9 \ud574\ub2f9 \uc5c6\uc74c"
+    }
+  ]
+}

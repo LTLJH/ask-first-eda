@@ -1,0 +1,60 @@
+[
+  {
+    "order_id": "00123",
+    "order_date": "2026-01-01",
+    "items": [
+      {
+        "sku": "S1",
+        "qty": 2
+      }
+    ]
+  },
+  {
+    "order_id": "a2",
+    "order_date": "2026-01-01",
+    "items": [
+      {
+        "sku": "S2",
+        "qty": 1
+      },
+      {
+        "sku": "S3",
+        "qty": 2
+      },
+      {
+        "sku": "S4",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "order_id": "b1",
+    "order_date": "2026-01-02",
+    "items": [
+      {
+        "sku": "S2",
+        "qty": 2
+      }
+    ]
+  },
+  {
+    "order_id": "b2",
+    "order_date": "2026-01-02",
+    "items": [
+      {
+        "sku": "S3",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "order_id": "b3",
+    "order_date": "2026-01-02",
+    "items": [
+      {
+        "sku": "S1",
+        "qty": 3
+      }
+    ]
+  }
+]

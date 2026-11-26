@@ -1,0 +1,83 @@
+{
+  "rows_by_asset": {
+    "P-01": 8640,
+    "P-02": 8640,
+    "P-03": 8640,
+    "P-04": 8640
+  },
+  "stops_by_asset": {
+    "P-01": {
+      "interval_count": 8,
+      "total_minutes": 3840,
+      "null_command_stop_samples": 96
+    },
+    "P-02": {
+      "interval_count": 9,
+      "total_minutes": 3930,
+      "null_command_stop_samples": 0
+    },
+    "P-03": {
+      "interval_count": 8,
+      "total_minutes": 3840,
+      "null_command_stop_samples": 0
+    },
+    "P-04": {
+      "interval_count": 8,
+      "total_minutes": 3840,
+      "null_command_stop_samples": 96
+    }
+  },
+  "restart_inrush_samples_by_asset": {
+    "P-01": 16,
+    "P-02": 18,
+    "P-03": 16,
+    "P-04": 16
+  },
+  "p02_abnormal_running": [
+    {
+      "start_kst": "2025-09-04T09:10:00+09:00",
+      "end_exclusive_kst": "2025-09-04T10:45:00+09:00",
+      "minutes": 95
+    },
+    {
+      "start_kst": "2025-09-12T15:20:00+09:00",
+      "end_exclusive_kst": "2025-09-12T17:20:00+09:00",
+      "minutes": 120
+    },
+    {
+      "start_kst": "2025-09-24T01:35:00+09:00",
+      "end_exclusive_kst": "2025-09-24T03:00:00+09:00",
+      "minutes": 85
+    }
+  ],
+  "p03_running_daily_mean": {
+    "days": 26,
+    "slope_mm_s_per_day": 0.088385,
+    "sep05_mm_s": 1.995446,
+    "sep30_mm_s": 4.208366
+  },
+  "p01_running_median_vibration": {
+    "before_change_mm_s": 2.100912,
+    "after_change_as_recorded": 0.082931,
+    "after_change_corrected_mm_s": 2.106447
+  },
+  "missing_rows": {
+    "any_column": 264,
+    "run_cmd": 210,
+    "vib_rms_mm_s": 54
+  },
+  "p04_missing_vibration": [
+    {
+      "start_kst": "2025-09-10T11:15:00+09:00",
+      "end_exclusive_kst": "2025-09-10T15:45:00+09:00",
+      "minutes": 270
+    }
+  ],
+  "p04_zero_vibration": [
+    {
+      "start_kst": "2025-09-26T07:25:00+09:00",
+      "end_exclusive_kst": "2025-09-26T09:05:00+09:00",
+      "minutes": 100
+    }
+  ]
+}

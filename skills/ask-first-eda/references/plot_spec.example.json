@@ -1,0 +1,38 @@
+{
+  "source": {"path": "plot_example.csv", "table_id": "text:1", "header": true},
+  "charts": [
+    {
+      "id": "mass_distribution", "type": "histogram", "column": "mass_kg",
+      "title": "How often does each mass range occur?", "bins": 4,
+      "x_label": "Mass", "x_unit": "kg", "y_label": "Batches"
+    },
+    {
+      "id": "mass_spread", "type": "boxplot", "column": "mass_kg",
+      "title": "How widely does batch mass vary?", "y_label": "Mass", "y_unit": "kg"
+    },
+    {
+      "id": "batch_counts", "type": "bar_counts", "column": "batch",
+      "title": "How many batches fall in each size class?",
+      "category_label": "Size class", "value_label": "Batches"
+    },
+    {
+      "id": "mass_by_trays", "type": "scatter", "x": "trays", "y": "mass_kg",
+      "title": "How does batch mass vary with tray count?",
+      "x_label": "Trays", "y_label": "Mass", "y_unit": "kg"
+    },
+    {
+      "id": "batch_correlations", "type": "corr_heatmap", "columns": ["trays", "mass_kg"],
+      "title": "How strongly do tray count and mass correlate?"
+    },
+    {
+      "id": "mass_by_size", "type": "grouped_boxplot", "group": "batch", "value": "mass_kg",
+      "title": "How does batch mass vary within each size class?",
+      "x_label": "Size class", "y_label": "Mass", "y_unit": "kg"
+    },
+    {
+      "id": "daily_mass", "type": "line_time", "time": "date", "value": "mass_kg",
+      "title": "What mass was recorded each day?",
+      "x_label": "Date", "y_label": "Mass", "y_unit": "kg"
+    }
+  ]
+}

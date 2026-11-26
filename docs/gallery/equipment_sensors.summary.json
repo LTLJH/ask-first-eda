@@ -1,0 +1,761 @@
+{
+  "datasets": [
+    {
+      "id": "parquet:1",
+      "format": "parquet",
+      "read_ranges": [
+        "sensor_readings.parquet row groups 0\u20133, rows 1\u201334,560 (PAR1 file and footer signatures, schema field names)"
+      ],
+      "unread": [],
+      "rows": 34560,
+      "columns": 7
+    }
+  ],
+  "row_counts": [
+    {
+      "input": "sensor_readings.parquet",
+      "transform": "Assign 1-based source row positions, sort by asset and time, classify running",
+      "output": "classified rows",
+      "before": 34560,
+      "after": 34560
+    },
+    {
+      "input": "classified rows",
+      "transform": "Select running rows with observed vibration",
+      "output": "valid running vibration",
+      "before": 34560,
+      "after": 31416
+    },
+    {
+      "input": "classified rows",
+      "transform": "Select running rows after removing observed restart transients",
+      "output": "steady current",
+      "before": 34560,
+      "after": 31404
+    }
+  ],
+  "metrics": [
+    {
+      "name": "P-01 running readings",
+      "definition": "Operating state classified from command, with the agreed current fallback for blank commands. This measure has no ratio components.",
+      "value": 7872.0,
+      "unit": "readings",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 1\u20138640"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-01 at or above caution",
+      "definition": "Share of valid running vibration readings at or above 2.8 mm/s RMS in September 2025.",
+      "value": 0.0,
+      "unit": "%",
+      "numerator": 0,
+      "denominator": 7872,
+      "source_refs": [
+        "sensor_readings.parquet rows 1\u20131704, 1801\u20131992, 2089\u20133720, 3817\u20134008, 4105\u20135736, 5833\u20136024, 6121\u20137752, 7849\u20138040, 8137\u20138640"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-01 at or above alarm",
+      "definition": "Share of valid running vibration readings at or above 4.5 mm/s RMS in September 2025.",
+      "value": 0.0,
+      "unit": "%",
+      "numerator": 0,
+      "denominator": 7872,
+      "source_refs": [
+        "sensor_readings.parquet rows 1\u20131704, 1801\u20131992, 2089\u20133720, 3817\u20134008, 4105\u20135736, 5833\u20136024, 6121\u20137752, 7849\u20138040, 8137\u20138640"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-01 at or above danger",
+      "definition": "Share of valid running vibration readings at or above 7.1 mm/s RMS in September 2025.",
+      "value": 0.0,
+      "unit": "%",
+      "numerator": 0,
+      "denominator": 7872,
+      "source_refs": [
+        "sensor_readings.parquet rows 1\u20131704, 1801\u20131992, 2089\u20133720, 3817\u20134008, 4105\u20135736, 5833\u20136024, 6121\u20137752, 7849\u20138040, 8137\u20138640"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-01 peak vibration",
+      "definition": "Maximum of valid running vibration readings. This measure has no ratio components.",
+      "value": 2.299981,
+      "unit": "mm/s RMS",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 3379"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-01 unusual steady current",
+      "definition": "Share of steady readings outside the September pump-specific outer Tukey fences (36.92500\u201347.08375 A).",
+      "value": 0.0,
+      "unit": "%",
+      "numerator": 0,
+      "denominator": 7856,
+      "source_refs": [
+        "sensor_readings.parquet rows 1\u20131704, 1803\u20131992, 2091\u20133720, 3819\u20134008, 4107\u20135736, 5835\u20136024, 6123\u20137752, 7851\u20138040, 8139\u20138640"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-02 running readings",
+      "definition": "Operating state classified from command, with the agreed current fallback for blank commands. This measure has no ratio components.",
+      "value": 7854.0,
+      "unit": "readings",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 8641\u201317280"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-02 at or above caution",
+      "definition": "Share of valid running vibration readings at or above 2.8 mm/s RMS in September 2025.",
+      "value": 0.7639419404125286,
+      "unit": "%",
+      "numerator": 60,
+      "denominator": 7854,
+      "source_refs": [
+        "sensor_readings.parquet rows 8641\u201310344, 10441\u201310632, 10729\u201312360, 12457\u201312648, 12745\u201313368, 13387\u201314376, 14473\u201314664, 14761\u201316392, 16489\u201316680, 16777\u201317280"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-02 at or above alarm",
+      "definition": "Share of valid running vibration readings at or above 4.5 mm/s RMS in September 2025.",
+      "value": 0.7639419404125286,
+      "unit": "%",
+      "numerator": 60,
+      "denominator": 7854,
+      "source_refs": [
+        "sensor_readings.parquet rows 8641\u201310344, 10441\u201310632, 10729\u201312360, 12457\u201312648, 12745\u201313368, 13387\u201314376, 14473\u201314664, 14761\u201316392, 16489\u201316680, 16777\u201317280"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-02 at or above danger",
+      "definition": "Share of valid running vibration readings at or above 7.1 mm/s RMS in September 2025.",
+      "value": 0.30557677616501144,
+      "unit": "%",
+      "numerator": 24,
+      "denominator": 7854,
+      "source_refs": [
+        "sensor_readings.parquet rows 8641\u201310344, 10441\u201310632, 10729\u201312360, 12457\u201312648, 12745\u201313368, 13387\u201314376, 14473\u201314664, 14761\u201316392, 16489\u201316680, 16777\u201317280"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-02 peak vibration",
+      "definition": "Maximum of valid running vibration readings. This measure has no ratio components.",
+      "value": 7.891245,
+      "unit": "mm/s RMS",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 9631"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-02 unusual steady current",
+      "definition": "Share of steady readings outside the September pump-specific outer Tukey fences (31.53425\u201340.47675 A).",
+      "value": 0.5615109749872383,
+      "unit": "%",
+      "numerator": 44,
+      "denominator": 7836,
+      "source_refs": [
+        "sensor_readings.parquet rows 8641\u201310344, 10443\u201310632, 10731\u201312360, 12459\u201312648, 12747\u201313368, 13389\u201314376, 14475\u201314664, 14763\u201316392, 16491\u201316680, 16779\u201317280"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-03 running readings",
+      "definition": "Operating state classified from command, with the agreed current fallback for blank commands. This measure has no ratio components.",
+      "value": 7872.0,
+      "unit": "readings",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 17281\u201325920"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-03 at or above caution",
+      "definition": "Share of valid running vibration readings at or above 2.8 mm/s RMS in September 2025.",
+      "value": 53.72205284552845,
+      "unit": "%",
+      "numerator": 4229,
+      "denominator": 7872,
+      "source_refs": [
+        "sensor_readings.parquet rows 17281\u201318984, 19081\u201319272, 19369\u201321000, 21097\u201321288, 21385\u201323016, 23113\u201323304, 23401\u201325032, 25129\u201325320, 25417\u201325920"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-03 at or above alarm",
+      "definition": "Share of valid running vibration readings at or above 4.5 mm/s RMS in September 2025.",
+      "value": 0.0,
+      "unit": "%",
+      "numerator": 0,
+      "denominator": 7872,
+      "source_refs": [
+        "sensor_readings.parquet rows 17281\u201318984, 19081\u201319272, 19369\u201321000, 21097\u201321288, 21385\u201323016, 23113\u201323304, 23401\u201325032, 25129\u201325320, 25417\u201325920"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-03 at or above danger",
+      "definition": "Share of valid running vibration readings at or above 7.1 mm/s RMS in September 2025.",
+      "value": 0.0,
+      "unit": "%",
+      "numerator": 0,
+      "denominator": 7872,
+      "source_refs": [
+        "sensor_readings.parquet rows 17281\u201318984, 19081\u201319272, 19369\u201321000, 21097\u201321288, 21385\u201323016, 23113\u201323304, 23401\u201325032, 25129\u201325320, 25417\u201325920"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-03 peak vibration",
+      "definition": "Maximum of valid running vibration readings. This measure has no ratio components.",
+      "value": 4.397506,
+      "unit": "mm/s RMS",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 25858"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-03 unusual steady current",
+      "definition": "Share of steady readings outside the September pump-specific outer Tukey fences (42.20200\u201353.81675 A).",
+      "value": 0.0,
+      "unit": "%",
+      "numerator": 0,
+      "denominator": 7856,
+      "source_refs": [
+        "sensor_readings.parquet rows 17281\u201318984, 19083\u201319272, 19371\u201321000, 21099\u201321288, 21387\u201323016, 23115\u201323304, 23403\u201325032, 25131\u201325320, 25419\u201325920"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-04 running readings",
+      "definition": "Operating state classified from command, with the agreed current fallback for blank commands. This measure has no ratio components.",
+      "value": 7872.0,
+      "unit": "readings",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 25921\u201334560"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-04 at or above caution",
+      "definition": "Share of valid running vibration readings at or above 2.8 mm/s RMS in September 2025.",
+      "value": 0.0,
+      "unit": "%",
+      "numerator": 0,
+      "denominator": 7818,
+      "source_refs": [
+        "sensor_readings.parquet rows 25921\u201327624, 27721\u201327912, 28009\u201328647, 28702\u201329640, 29737\u201329928, 30025\u201331656, 31753\u201331944, 32041\u201333672, 33769\u201333960, 34057\u201334560"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-04 at or above alarm",
+      "definition": "Share of valid running vibration readings at or above 4.5 mm/s RMS in September 2025.",
+      "value": 0.0,
+      "unit": "%",
+      "numerator": 0,
+      "denominator": 7818,
+      "source_refs": [
+        "sensor_readings.parquet rows 25921\u201327624, 27721\u201327912, 28009\u201328647, 28702\u201329640, 29737\u201329928, 30025\u201331656, 31753\u201331944, 32041\u201333672, 33769\u201333960, 34057\u201334560"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-04 at or above danger",
+      "definition": "Share of valid running vibration readings at or above 7.1 mm/s RMS in September 2025.",
+      "value": 0.0,
+      "unit": "%",
+      "numerator": 0,
+      "denominator": 7818,
+      "source_refs": [
+        "sensor_readings.parquet rows 25921\u201327624, 27721\u201327912, 28009\u201328647, 28702\u201329640, 29737\u201329928, 30025\u201331656, 31753\u201331944, 32041\u201333672, 33769\u201333960, 34057\u201334560"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-04 peak vibration",
+      "definition": "Maximum of valid running vibration readings. This measure has no ratio components.",
+      "value": 2.399975,
+      "unit": "mm/s RMS",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 32096"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-04 unusual steady current",
+      "definition": "Share of steady readings outside the September pump-specific outer Tukey fences (27.18700\u201334.79600 A).",
+      "value": 0.0,
+      "unit": "%",
+      "numerator": 0,
+      "denominator": 7856,
+      "source_refs": [
+        "sensor_readings.parquet rows 25921\u201327624, 27723\u201327912, 28011\u201329640, 29739\u201329928, 30027\u201331656, 31755\u201331944, 32043\u201333672, 33771\u201333960, 34059\u201334560"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-02 peak on Sep 04",
+      "definition": "Maximum operating RMS vibration within the consecutive five-minute alarm readings at 09:10\u201310:40 local time. This measure has no ratio components.",
+      "value": 7.891245,
+      "unit": "mm/s RMS",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 9615\u20139633"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-02 danger share during Sep 04 alarm",
+      "definition": "Share of consecutive alarm-or-higher readings at or above 7.1 mm/s RMS during 09:10\u201310:40 local time.",
+      "value": 42.10526315789474,
+      "unit": "%",
+      "numerator": 8,
+      "denominator": 19,
+      "source_refs": [
+        "sensor_readings.parquet rows 9615\u20139633"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-02 peak on Sep 12",
+      "definition": "Maximum operating RMS vibration within the consecutive five-minute alarm readings at 15:20\u201317:15 local time. This measure has no ratio components.",
+      "value": 7.791988,
+      "unit": "mm/s RMS",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 11993\u201312016"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-02 danger share during Sep 12 alarm",
+      "definition": "Share of consecutive alarm-or-higher readings at or above 7.1 mm/s RMS during 15:20\u201317:15 local time.",
+      "value": 37.5,
+      "unit": "%",
+      "numerator": 9,
+      "denominator": 24,
+      "source_refs": [
+        "sensor_readings.parquet rows 11993\u201312016"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-02 peak on Sep 24",
+      "definition": "Maximum operating RMS vibration within the consecutive five-minute alarm readings at 01:35\u201302:55 local time. This measure has no ratio components.",
+      "value": 7.788016,
+      "unit": "mm/s RMS",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 15284\u201315300"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-02 danger share during Sep 24 alarm",
+      "definition": "Share of consecutive alarm-or-higher readings at or above 7.1 mm/s RMS during 01:35\u201302:55 local time.",
+      "value": 41.1764705882353,
+      "unit": "%",
+      "numerator": 7,
+      "denominator": 17,
+      "source_refs": [
+        "sensor_readings.parquet rows 15284\u201315300"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-01 median vibration, September 1\u201319",
+      "definition": "Median among 5,088 valid running readings. This measure has no ratio components.",
+      "value": 2.100912,
+      "unit": "mm/s RMS",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 1\u20131704, 1801\u20131992, 2089\u20133720, 3817\u20134008, 4105\u20135472"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-01 median steady current, September 1\u201319",
+      "definition": "Median among 5,080 steady-running readings. This measure has no ratio components.",
+      "value": 41.985,
+      "unit": "A",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 1\u20131704, 1803\u20131992, 2091\u20133720, 3819\u20134008, 4107\u20135472"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-01 median vibration, September 20\u201330",
+      "definition": "Median among 2,784 valid running readings. This measure has no ratio components.",
+      "value": 0.082931,
+      "unit": "mm/s RMS",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 5473\u20135736, 5833\u20136024, 6121\u20137752, 7849\u20138040, 8137\u20138640"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-01 median steady current, September 20\u201330",
+      "definition": "Median among 2,776 steady-running readings. This measure has no ratio components.",
+      "value": 42.005,
+      "unit": "A",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 5473\u20135736, 5835\u20136024, 6123\u20137752, 7851\u20138040, 8139\u20138640"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-03 sustained rise",
+      "definition": "Elapsed calendar days between September 6 and 30, during which the daily running median rose at every daily comparison. This measure has no ratio components.",
+      "value": 24.0,
+      "unit": "days",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 18721\u201318984, 19081\u201319272, 19369\u201321000, 21097\u201321288, 21385\u201323016, 23113\u201323304, 23401\u201325032, 25129\u201325320, 25417\u201325920"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-03 daily median on 2025-09-05",
+      "definition": "Median of 288 valid running readings. This measure has no ratio components.",
+      "value": 1.9904825,
+      "unit": "mm/s RMS",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 18433\u201318720"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-03 daily median on 2025-09-06",
+      "definition": "Median of 264 valid running readings. This measure has no ratio components.",
+      "value": 2.0905994999999997,
+      "unit": "mm/s RMS",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 18721\u201318984"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-03 daily median on 2025-09-30",
+      "definition": "Median of 288 valid running readings. This measure has no ratio components.",
+      "value": 4.1988900000000005,
+      "unit": "mm/s RMS",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 25633\u201325920"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "P-04 missing running vibration",
+      "definition": "Count of running records with a null RMS vibration value on September 10. This measure has no ratio components.",
+      "value": 54.0,
+      "unit": "readings",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 28648\u201328701"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Restart current readings set aside",
+      "definition": "Current readings at the first observed restart sample and five minutes later across 33 observed restarts. This measure has no ratio components.",
+      "value": 66.0,
+      "unit": "readings",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 1801\u20131802, 2089\u20132090, 3817\u20133818, 4105\u20134106, 5833\u20135834, 6121\u20136122, 7849\u20137850, 8137\u20138138, 10441\u201310442, 10729\u201310730, 12457\u201312458, 12745\u201312746, 13387\u201313388, 14473\u201314474, 14761\u201314762, 16489\u201316490, 16777\u201316778, 19081\u201319082, 19369\u201319370, 21097\u201321098, 21385\u201321386, 23113\u201323114, 23401\u201323402, 25129\u201325130, 25417\u201325418, 27721\u201327722, 28009\u201328010, 29737\u201329738, 30025\u201330026, 31753\u201331754, 32041\u201332042, 33769\u201333770, 34057\u201334058"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    },
+    {
+      "name": "Readings with any missing field",
+      "definition": "Count across all seven source fields. No row has both command and vibration missing. This measure has no ratio components.",
+      "value": 264.0,
+      "unit": "readings",
+      "numerator": null,
+      "denominator": null,
+      "source_refs": [
+        "sensor_readings.parquet rows 7750\u20137851, 28648\u201328701, 29635\u201329742"
+      ],
+      "depends_on_ambiguity_ids": [],
+      "condition": null
+    }
+  ],
+  "ambiguity_log": [
+    {
+      "id": "A01",
+      "checklist_item": "Domain and business process",
+      "status": "resolved",
+      "file_evidence": [
+        "sensor_readings.parquet row groups 0\u20133, rows 1\u201334,560"
+      ],
+      "answer": "User describes four pumps with motor current and vibration readings.",
+      "affects": [],
+      "candidates": [],
+      "question": null
+    },
+    {
+      "id": "A02",
+      "checklist_item": "Maintenance decision",
+      "status": "resolved",
+      "file_evidence": [
+        "User request"
+      ],
+      "answer": "Identify September abnormal operation and prioritize next week\u2019s inspection.",
+      "affects": [],
+      "candidates": [],
+      "question": null
+    },
+    {
+      "id": "A03",
+      "checklist_item": "Row grain",
+      "status": "resolved",
+      "file_evidence": [
+        "sensor_readings.parquet row groups 0\u20133, rows 1\u201334,560"
+      ],
+      "answer": "One observed pump and timestamp per record, at a complete five-minute cadence.",
+      "affects": [],
+      "candidates": [],
+      "question": null
+    },
+    {
+      "id": "A04",
+      "checklist_item": "Units and operating eligibility",
+      "status": "resolved",
+      "file_evidence": [
+        "sensor_readings.parquet rows 7,750\u20137,851 and 29,635\u201329,742"
+      ],
+      "answer": "Source field names establish A and mm/s RMS. User confirmed 1 is running and the fallback cutoff is strictly above 20% of rated current where command is blank. Ratings are 42 A and 31 A for P-01 and P-04.",
+      "affects": [],
+      "candidates": [],
+      "question": null
+    },
+    {
+      "id": "A05",
+      "checklist_item": "Time basis",
+      "status": "resolved",
+      "file_evidence": [
+        "sensor_readings.parquet row groups 0\u20133, rows 1\u201334,560"
+      ],
+      "answer": "Full timestamp coverage in Asia/Seoul establishes the local September 2025 calendar window.",
+      "affects": [],
+      "candidates": [],
+      "question": null
+    },
+    {
+      "id": "A06",
+      "checklist_item": "Vibration and restart exceptions",
+      "status": "resolved",
+      "file_evidence": [
+        "sensor_readings.parquet row groups 0\u20133, rows 1\u201334,560"
+      ],
+      "answer": "User set caution, alarm and danger thresholds and the two-week inspection rule. User specified a 10-minute inrush exclusion for current.",
+      "affects": [],
+      "candidates": [],
+      "question": null
+    },
+    {
+      "id": "A06a",
+      "checklist_item": "Engineering limits for steady current",
+      "status": "unresolved",
+      "file_evidence": [
+        "sensor_readings.parquet row groups 0\u20133, rows 1\u201334,560"
+      ],
+      "answer": "User does not have current limits. Pump-specific statistical screening supports inspection triage.",
+      "affects": [
+        "Interpretation of statistical current flags"
+      ],
+      "candidates": [],
+      "question": null
+    },
+    {
+      "id": "A07",
+      "checklist_item": "Missing measurements",
+      "status": "resolved",
+      "file_evidence": [
+        "sensor_readings.parquet rows 28,648\u201328,701, plus blank-command windows in A04"
+      ],
+      "answer": "Missing vibration remains unobserved. User resolved command gaps with the current fallback.",
+      "affects": [],
+      "candidates": [],
+      "question": null
+    },
+    {
+      "id": "A08",
+      "checklist_item": "Join keys",
+      "status": "not_applicable",
+      "file_evidence": [
+        "sensor_readings.parquet row groups 0\u20133, rows 1\u201334,560"
+      ],
+      "answer": "One Parquet table, no join.",
+      "affects": [],
+      "candidates": [],
+      "question": null
+    }
+  ],
+  "charts": [
+    {
+      "id": "daily_vibration",
+      "question": "Which pumps show sustained changes in running vibration?",
+      "type": "line_time",
+      "source_columns": [
+        "asset_id",
+        "ts",
+        "vib_rms_mm_s",
+        "run_cmd",
+        "current_a"
+      ],
+      "n_used": 31416,
+      "n_excluded": 3144,
+      "exclusion_reason": "3,090 stopped readings and 54 running readings with missing vibration."
+    },
+    {
+      "id": "raw_vibration",
+      "question": "When did individual readings breach operating limits?",
+      "type": "scatter",
+      "source_columns": [
+        "asset_id",
+        "ts",
+        "vib_rms_mm_s",
+        "run_cmd",
+        "current_a"
+      ],
+      "n_used": 31416,
+      "n_excluded": 3144,
+      "exclusion_reason": "3,090 stopped readings and 54 running readings with missing vibration."
+    },
+    {
+      "id": "burst_current",
+      "question": "How did P-02 current behave during its three vibration alarms?",
+      "type": "line_time",
+      "source_columns": [
+        "asset_id",
+        "ts",
+        "current_a",
+        "vib_rms_mm_s",
+        "run_cmd"
+      ],
+      "n_used": 60,
+      "n_excluded": 34500,
+      "exclusion_reason": "34,500 readings outside the three P-02 alarm windows."
+    }
+  ],
+  "exclusions": [
+    {
+      "scope": "Running vibration and steady current",
+      "source_refs": [
+        "sensor_readings.parquet rows 1705\u20131800, 1993\u20132088, 3721\u20133816, 4009\u20134104, 5737\u20135832, 6025\u20136120, 7753\u20137848, 8041\u20138136, 10345\u201310440, 10633\u201310728, 12361\u201312456, 12649\u201312744, 13369\u201313386, 14377\u201314472, 14665\u201314760, 16393\u201316488, 16681\u201316776, 18985\u201319080, 19273\u201319368, 21001\u201321096, 21289\u201321384, 23017\u201323112, 23305\u201323400, 25033\u201325128, 25321\u201325416, 27625\u201327720, 27913\u201328008, 29641\u201329736, 29929\u201330024, 31657\u201331752, 31945\u201332040, 33673\u201333768, 33961\u201334056"
+      ],
+      "reason": "Stopped state."
+    },
+    {
+      "scope": "Running vibration",
+      "source_refs": [
+        "sensor_readings.parquet rows 28648\u201328701"
+      ],
+      "reason": "RMS vibration is missing."
+    },
+    {
+      "scope": "Steady current",
+      "source_refs": [
+        "sensor_readings.parquet rows 1801\u20131802, 2089\u20132090, 3817\u20133818, 4105\u20134106, 5833\u20135834, 6121\u20136122, 7849\u20137850, 8137\u20138138, 10441\u201310442, 10729\u201310730, 12457\u201312458, 12745\u201312746, 13387\u201313388, 14473\u201314474, 14761\u201314762, 16489\u201316490, 16777\u201316778, 19081\u201319082, 19369\u201319370, 21097\u201321098, 21385\u201321386, 23113\u201323114, 23401\u201323402, 25129\u201325130, 25417\u201325418, 27721\u201327722, 28009\u201328010, 29737\u201329738, 30025\u201330026, 31753\u201331754, 32041\u201332042, 33769\u201333770, 34057\u201334058"
+      ],
+      "reason": "The first 10 minutes after observed restart."
+    },
+    {
+      "scope": "P-02 current detail figure",
+      "source_refs": [
+        "sensor_readings.parquet rows 1\u20139614, 9634\u201311992, 12017\u201315283, 15301\u201334560"
+      ],
+      "reason": "Outside the three P-02 vibration alarm windows."
+    }
+  ]
+}
