@@ -105,11 +105,11 @@ Korean chart labels require a system font that supports Hangul.
 
 ## Evaluation
 
-Across the first four pairs, total wall time with the skill was 4.54× the total without it. Runs without the skill produced no reports, so the times cover different deliverables. The revised harness requires both conditions to deliver an HTML report and a results file. [A/B summary](evals/ab_summary.md) · [Evaluation method](evals/README.md)
+Across 36 runs on six synthetic cases, independent review found 18/24 correct numeric results with no skill (A), 24/24 with a one-line instruction (B), and 24/24 with the skill (C).
+B and C each produced 18/24 confirmed final values. C made no unsupported definition assertions and exposed no home paths.
+No condition asked the required denominator question. C used about twice B’s median analyst time and tokens. [A/B/C results and grading corrections](evals/abc_summary.md)
 
-Revision a1 changed uncached input plus output tokens by −29.1% from baseline (b0). The later revision a3 changed the same total by −1.8% from b0. [Revision results](evals/ab_summary.md#lightweight-revision-2026-11-23)
-
-These small exploratory comparisons do not guarantee performance for the current version.
+Earlier versions are covered in the [A/B summary](evals/ab_summary.md).
 
 ## License
 
