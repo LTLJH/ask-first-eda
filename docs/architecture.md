@@ -34,7 +34,7 @@ evals/                              Development only
 | Clean | Source, approved rules and fresh `clean.py` → `cleaned_*.csv` and `excluded.csv` | Proceed only after `audit_clean.py` returns `pass`. Each expected source row must appear in the cleaned copy or have a reason in the exclusion log. For Excel, `--sheets` takes a comma-separated list of approved sheets and defaults to all sheets. Reconcile totals separately. |
 | Analyze | Selected data (audited CSV after cleaning), profile and interview log → metric entries and chart specifications | Session code computes the values and retains source references. An unexplained increase in rows after a join blocks calculations that depend on it. |
 | Plot | `plot-spec.json` and its source table → PNGs and `plot-results.json` via stdout | The renderer checks chart IDs and types. The analyst matches its metadata to report entries by ID and checks sample sizes and exclusions. |
-| Build report | `report-spec.json` and PNGs → `report.html` and `eda_summary.json` | `build_report.py` enforces the [summary schema](../skills/ask-first-eda/references/eda_summary.schema.json) and checks rates and IDs. Metric dependencies must reference existing ambiguity IDs. An unresolved dependency requires a condition. |
+| Build report | `report-spec.json` and PNGs → `report.html` and `eda_summary.json` | `build_report.py` enforces the [summary schema](https://github.com/LTLJH/ask-first-eda/blob/main/skills/ask-first-eda/references/eda_summary.schema.json) and checks rates and IDs. Metric dependencies must reference existing ambiguity IDs. An unresolved dependency requires a condition. |
 | Test the CLI documentation | Commands in `SKILL.md` and each referenced script's `--help` → pytest result | `tests/test_skill_docs.py` checks documented command options and requires `--cleaned` and `--excluded` together in the audit command. |
 
 For a zero denominator, the rate check requires a null value. Otherwise it skips arithmetic if any component is null. For numeric components it compares the reported value with `numerator / denominator × scale`. The optional positive `scale` defaults to 100 for the unit `%` and 1 for other units. The tolerance is `1e-9` times the absolute expected value. An expected value of zero requires an exact zero.
@@ -43,7 +43,7 @@ For a zero denominator, the rate check requires a null value. Otherwise it skips
 
 | Step | Component | What the user sees or decides |
 | --- | --- | --- |
-| Discover | [README](../README.md), [gallery](gallery/index.html) and [walkthroughs](walkthroughs/) | Open a finished report and see how an interview answer affects a calculation. |
+| Discover | [README](https://github.com/LTLJH/ask-first-eda/blob/main/README.md), [gallery](gallery/index.html) and [walkthroughs](walkthroughs/) | Open a finished report and see how an interview answer affects a calculation. |
 | Install | README and `skills/ask-first-eda/requirements.txt` | Install the Python dependencies and copy the skill directory into the client's skills folder. |
 | First run | `inspect_data.py` and `SKILL.md` | See the tables and coverage, get any settled metrics, and answer at most one opening question. |
 | Interview | `profile_data.py` and the ambiguity log | Choose among definitions using evidence from specific rows. Deferred choices stay open. |

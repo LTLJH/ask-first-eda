@@ -124,8 +124,12 @@ def skill_files(skill_dir):
 
 
 def package_skill(output):
-    files = skill_files(SKILL_DIR)
+    files = {relative: SKILL_DIR / relative for relative in skill_files(SKILL_DIR)}
     name = skill_name(SKILL_DIR)
+    license_path = ROOT / "LICENSE"
+    if license_path.is_symlink():
+        raise ValueError(f"Cannot package symlink: {license_path}")
+    files["LICENSE"] = license_path
     if output.resolve().is_relative_to(SKILL_DIR):
         raise ValueError("The output ZIP must be outside the skill folder")
 
@@ -133,11 +137,11 @@ def package_skill(output):
     with TemporaryDirectory(dir=output.parent) as temporary:
         staged = Path(temporary) / "skill.zip"
         with ZipFile(staged, "w") as archive:
-            for relative in files:
+            for relative, source in sorted(files.items()):
                 entry = ZipInfo(f"{name}/{relative}", date_time=ZIP_TIMESTAMP)
                 entry.create_system = 3  # Store Unix permissions on every platform.
                 entry.external_attr = (stat.S_IFREG | 0o644) << 16
-                archive.writestr(entry, (SKILL_DIR / relative).read_bytes())
+                archive.writestr(entry, source.read_bytes())
         staged.replace(output)
     return len(files)
 

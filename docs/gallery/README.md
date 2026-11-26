@@ -1,6 +1,6 @@
 # Report gallery
 
-The [gallery](index.html) shows five reports generated with the `eda` skill. The analyst and simulated user both used `gpt-6.2-sol` in all five runs. Each run started with an [example dataset and opening request](../../examples/README.md).
+The [gallery](index.html) shows five reports generated with the `eda` skill. The analyst and simulated user both used `gpt-6.2-sol` in all five runs. Each run started with an [example dataset and opening request](https://github.com/LTLJH/ask-first-eda/blob/main/examples/README.md).
 
 | Report | Description | Input | Analyst turns | Charts | Conversation | Data |
 | --- | --- | --- | --- | --- | --- | --- |

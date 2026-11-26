@@ -79,6 +79,15 @@ def test_readme_opens_with_example_question_preview_and_install(readme_text):
     assert table.end() <= question.start() < preview.start() < install.start()
 
 
+def test_readme_links_to_pages_and_release_in_opening(readme_text):
+    opening = readme_text.split("\n## ", 1)[0]
+    after_table = opening.rsplit("\n|", 1)[1]
+    pages = "https://ltljh.github.io/ask-first-eda/gallery/"
+    assert f"]({pages}support_tickets.html)" in after_table
+    assert f"]({pages}index.html)" in after_table
+    assert "](https://github.com/LTLJH/ask-first-eda/releases/latest)" in after_table
+
+
 @pytest.fixture
 def evaluation(readme_text):
     return re.split(r"^## (?:Evaluation|평가)$", readme_text, flags=re.M)[1].split("\n## ")[0]
@@ -838,7 +847,11 @@ def public_text_files(root):
     skill_extensions = {".md", ".rst", ".txt", ".html", ".json", ".yaml", ".yml"}
     tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=root)
     paths = {root / os.fsdecode(name) for name in tracked.split(b"\0") if name}
-    paths = {path for path in paths if path.suffix.lower() in tracked_extensions}
+    paths = {
+        path for path in paths
+        if path.suffix.lower() in tracked_extensions
+        or (path.suffix.lower() == ".csv" and path.is_relative_to(root / "docs"))
+    }
     paths.update(
         path for path in (root / "skills").rglob("*")
         if path.suffix.lower() in skill_extensions
@@ -892,6 +905,12 @@ def test_public_docs_have_no_forbidden_terms():
     hits = forbidden_term_locations(ROOT, public_text_files(ROOT))
     if hits:
         pytest.fail("\n".join(hits), pytrace=False)
+
+
+def test_forbidden_term_scan_includes_published_csv_files():
+    published_csvs = set((ROOT / "docs").rglob("*.csv"))
+    assert published_csvs
+    assert published_csvs <= set(public_text_files(ROOT))
 
 
 def test_forbidden_term_scan_normalizes_unicode_and_reports_location(tmp_path):

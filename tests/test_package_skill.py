@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -11,6 +12,7 @@ from conftest import ROOT
 
 
 SKILL = "ask-first-eda"
+RELEASE_URL = "https://github.com/LTLJH/ask-first-eda/releases/latest"
 
 
 @pytest.fixture
@@ -20,6 +22,7 @@ def package_repo(tmp_path):
     if script.is_file():
         shutil.copyfile(script, tmp_path / "scripts" / script.name)
     shutil.copytree(ROOT / "skills" / SKILL, tmp_path / "skills" / SKILL)
+    shutil.copyfile(ROOT / "LICENSE", tmp_path / "LICENSE")
     return tmp_path
 
 
@@ -136,6 +139,32 @@ def test_package_has_help():
     assert "--out" in result.stdout
 
 
+def test_package_includes_repository_license(package_repo):
+    result = run_packager(package_repo)
+
+    assert result.returncode == 0, result.stderr
+    with ZipFile(package_repo / "dist" / f"{SKILL}.zip") as archive:
+        assert f"{SKILL}/LICENSE" in archive.namelist()
+        assert archive.read(f"{SKILL}/LICENSE") == (package_repo / "LICENSE").read_bytes()
+
+
+def test_package_requires_repository_license(package_repo):
+    (package_repo / "LICENSE").unlink()
+    result = run_packager(package_repo)
+
+    assert result.returncode == 1, result.stderr
+    assert "LICENSE" in result.stderr
+    assert not (package_repo / "dist" / f"{SKILL}.zip").exists()
+
+
+def test_skill_version_matches_latest_changelog_version():
+    changelog = ROOT / "CHANGELOG.md"
+    assert changelog.is_file()
+    latest = re.search(r"^## \[?(\d+\.\d+\.\d+)\]?(?=\s|$)", changelog.read_text(encoding="utf-8"), re.M)
+    assert latest
+    assert (ROOT / "skills" / SKILL / "VERSION").read_text(encoding="utf-8").strip() == latest[1]
+
+
 @pytest.mark.parametrize("filename", ["README.md", "README.ko.md"])
 def test_readme_documents_desktop_install(filename):
     readme = (ROOT / filename).read_text(encoding="utf-8")
@@ -144,3 +173,7 @@ def test_readme_documents_desktop_install(filename):
     section = desktop.split("\n##", 1)[0]
     for term in ("python scripts/package_skill.py", "Settings", "Skills", "dist/ask-first-eda.zip", "check_install.py"):
         assert term in section
+    first_step = next(line for line in section.splitlines() if line.startswith("1. "))
+    assert RELEASE_URL in first_step
+    assert "`ask-first-eda.zip`" in first_step
+    assert "python scripts/package_skill.py" not in first_step

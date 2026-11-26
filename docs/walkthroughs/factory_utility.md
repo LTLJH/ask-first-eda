@@ -1,13 +1,13 @@
 # Factory Utility walkthrough
 
 This synthetic manufacturing workbook is licensed under MIT. The conversation includes replies from a simulated user.
-[Dataset provenance and license](../../examples/factory_utility/SOURCE.md)
+[Dataset provenance and license](https://github.com/LTLJH/ask-first-eda/blob/main/examples/factory_utility/SOURCE.md)
 
 ## Step 0 — Input
 
 | File | Size | Format |
 | --- | --- | --- |
-| [`utility_batches.xlsx`](../../examples/factory_utility/utility_batches.xlsx) | 6,324 bytes | Excel (.xlsx) |
+| [`utility_batches.xlsx`](https://github.com/LTLJH/ask-first-eda/blob/main/examples/factory_utility/utility_batches.xlsx) | 6,324 bytes | Excel (.xlsx) |
 
 The report read `batches!A1:G12` and `meter_readings!A1:D12`. Both sheets have grouped headings on row 1, field names on row 2, and 10 data records on rows 3–12.
 

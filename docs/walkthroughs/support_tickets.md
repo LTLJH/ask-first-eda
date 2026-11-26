@@ -1,13 +1,13 @@
 # Support Tickets walkthrough
 
 This synthetic B2B support ticket log is licensed under MIT. The conversation includes replies from a simulated user.
-[Dataset provenance and license](../../examples/support_tickets/SOURCE.md)
+[Dataset provenance and license](https://github.com/LTLJH/ask-first-eda/blob/main/examples/support_tickets/SOURCE.md)
 
 ## Step 0 — Input
 
 | File | Size | Format |
 | --- | --- | --- |
-| [`tickets.jsonl`](../../examples/support_tickets/tickets.jsonl) | 861,940 bytes | JSONL |
+| [`tickets.jsonl`](https://github.com/LTLJH/ask-first-eda/blob/main/examples/support_tickets/tickets.jsonl) | 861,940 bytes | JSONL |
 
 The full UTF-8 read covered lines 1–1,500, with one ticket per line and 12 fields per ticket. The creation timestamps span Q2 2025 in KST. Status events are nested within each ticket.
 
@@ -52,7 +52,7 @@ The report uses weekdays 09:00–18:00 KST, excluding May 5 and June 6. The elap
 | Business hours | 1,268 | 199 | 18 | 86.43% (1,268/1,467) |
 | Elapsed time | 346 | 1,133 | 6 | 23.39% (346/1,479) |
 
-The elapsed-time result comes from a separate recalculation on the same input. [Fact-check script](../../examples/support_tickets/check_facts.py)
+The elapsed-time result comes from a separate recalculation on the same input. [Fact-check script](https://github.com/LTLJH/ask-first-eda/blob/main/examples/support_tickets/check_facts.py)
 
 ## Report
 
