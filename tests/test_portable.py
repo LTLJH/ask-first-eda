@@ -314,7 +314,7 @@ def test_check_install_has_help_even_without_dependencies(tmp_path, copied_scrip
 @pytest.mark.parametrize(("file", "heading"), [("README.md", "Install"), ("README.ko.md", "설치")])
 def test_readme_documents_install_check(file, heading):
     _, section = skill_section((ROOT / file).read_text(encoding="utf-8"), heading)
-    assert re.search(r"python(?:3)?\s+(?:-I\s+)?skills/ask-first-eda/scripts/check_install\.py\b", section)
+    assert re.search(r"python\s+-I\s+scripts/check_install\.py\b", section)
 
 
 def test_skill_setup_documents_install_check():
