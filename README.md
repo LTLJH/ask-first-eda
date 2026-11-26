@@ -20,36 +20,42 @@ The line produced 60 units. It averaged 15 units/h over the full shift and 20 un
 
 ## Install
 
-Requires Python 3.10 or later. Install dependencies from the repository root.
+Requires Python 3.10 or later. In the extracted `ask-first-eda` folder, install dependencies and check the installation:
 
 ```sh
-python3 -m pip install -r skills/ask-first-eda/requirements.txt
-python3 -I skills/ask-first-eda/scripts/check_install.py
+python -m pip install -r requirements.txt
+python -I scripts/check_install.py
 ```
-
-Replace `<project>` with the path to the project where you want to use the skill, then run the commands for your client.
-
-```sh
-# Claude Code
-mkdir -p "<project>/.claude/skills"
-cp -r skills/ask-first-eda "<project>/.claude/skills/ask-first-eda"
-
-# Codex
-mkdir -p "<project>/.agents/skills"
-cp -r skills/ask-first-eda "<project>/.agents/skills/ask-first-eda"
-```
-
-Claude Code also supports the user-level path `~/.claude/skills/ask-first-eda/`.
-
-Before the rename, project-scoped routing passed all four checks per client on Claude Code 2.1.330 and Codex 0.171.0. Routing under the new name is pending. [Installation smoke status](evals/install_smoke.json)
 
 ### Claude desktop app
 
-1. Download `ask-first-eda.zip` from the [latest Release](https://github.com/LTLJH/ask-first-eda/releases/latest).
-2. In the Claude desktop app, upload the ZIP from **Settings → Skills** if available. You can also look under **Customize → Skills** or the **Plugins** sidebar.
-3. The app may block package installation. Ask Claude to run the uploaded skill’s `scripts/check_install.py` to check which dependencies are available.
+1. Download `ask-first-eda.zip` from the [latest Release](https://github.com/LTLJH/ask-first-eda/releases/latest) and upload it in **Settings → Skills** (or **Customize → Skills** / **Plugins**).
+2. The app may block package installation, so ask Claude to run the uploaded skill’s `scripts/check_install.py` to check available dependencies.
+3. To build the ZIP locally, run `python scripts/package_skill.py` from the repository root and upload `dist/ask-first-eda.zip`.
 
-To build the ZIP locally, run `python scripts/package_skill.py` from the repository root and upload `dist/ask-first-eda.zip`.
+### Claude Code
+
+- Copy the extracted folder to `<project>/.claude/skills/ask-first-eda/` or `~/.claude/skills/ask-first-eda/` (or unpack the Release ZIP there).
+- Open the terminal in the project folder and start Claude Code there, because that is where the work folder is created.
+- Use the project path for a single project and the user path for all projects.
+
+### Codex
+
+- Copy the extracted folder to `<project>/.agents/skills/ask-first-eda/` (or unpack the Release ZIP there).
+- Open the terminal in the project folder before starting Codex so the skill is available to that project.
+- Use the project path when the skill should apply only to that project.
+
+On Windows, use `python` rather than `python3`; in PowerShell, use `Copy-Item -Recurse .\skills\ask-first-eda <project>\.claude\skills\ask-first-eda` (or the `.agents\skills` path for Codex).
+
+To update, replace the installed folder or upload the new Release ZIP. To remove it, delete the folder or remove the skill in the app.
+
+| Client | Version | Date | Verification scope | First run |
+| --- | --- | --- | --- | --- |
+| Claude Code | 2.1.332 | 2026-11-26 | routing 4/4(install smoke) | pass (2026-11-26, clean project, support_tickets example: eda-work/delivery/report.html and eda_summary.json created in the project folder) |
+| Codex | 0.171.0 | 2026-11-26 | routing 4/4(install smoke) | covered by evaluation runs (codex exec) |
+| Claude desktop app | — | 2026-11-26 | upload and run, manual | pass (manual, 2026-11-26) |
+
+See the [installation smoke status](evals/install_smoke.json) for the automated results.
 
 ### Try it in one minute
 

@@ -20,36 +20,42 @@ Ask First EDA는 지표의 계산 기준을 먼저 묻고, 그 기준으로 데�
 
 ## 설치
 
-Python 3.10 이상이 필요합니다. 저장소 루트에서 의존성을 설치하세요.
+Python 3.10 이상이 필요합니다. 압축을 푼 `ask-first-eda` 폴더에서 의존성을 설치하고 설치 상태를 점검하세요.
 
 ```sh
-python3 -m pip install -r skills/ask-first-eda/requirements.txt
-python3 -I skills/ask-first-eda/scripts/check_install.py
+python -m pip install -r requirements.txt
+python -I scripts/check_install.py
 ```
-
-`<project>`를 스킬을 사용할 프로젝트 경로로 바꾸고, 해당 클라이언트의 명령을 실행하세요.
-
-```sh
-# Claude Code
-mkdir -p "<project>/.claude/skills"
-cp -r skills/ask-first-eda "<project>/.claude/skills/ask-first-eda"
-
-# Codex
-mkdir -p "<project>/.agents/skills"
-cp -r skills/ask-first-eda "<project>/.agents/skills/ask-first-eda"
-```
-
-Claude Code는 사용자 전역 경로인 `~/.claude/skills/ask-first-eda/`도 지원합니다.
-
-이름 변경 전에는 Claude Code 2.1.330과 Codex 0.171.0에서 프로젝트 단위 라우팅 검사를 각각 4건 통과했습니다. 새 이름으로 실제 클라이언트에서 실행하는 라우팅 검사는 남아 있습니다. [설치 스모크 상태](evals/install_smoke.json)
 
 ### Claude desktop app
 
-1. [최신 Release](https://github.com/LTLJH/ask-first-eda/releases/latest)에서 `ask-first-eda.zip`을 받으세요.
-2. Claude 데스크톱 앱의 **Settings → Skills**에서 ZIP을 업로드하세요. 메뉴 위치가 다르면 **Customize → Skills** 또는 사이드바의 **Plugins**를 확인하세요.
-3. 앱에서는 패키지 설치가 차단될 수 있습니다. Claude에게 업로드한 스킬의 `scripts/check_install.py`를 실행해 사용 가능한 의존성을 확인해 달라고 요청하세요.
+1. [최신 Release](https://github.com/LTLJH/ask-first-eda/releases/latest)의 `ask-first-eda.zip`을 내려받아 **Settings → Skills**(또는 **Customize → Skills** / **Plugins**)에서 업로드하세요.
+2. 앱에서는 패키지 설치가 막힐 수 있으므로 Claude에게 업로드한 스킬의 `scripts/check_install.py`를 실행해 사용 가능한 의존성을 확인해 달라고 요청하세요.
+3. ZIP을 직접 만들려면 저장소 루트에서 `python scripts/package_skill.py`를 실행한 뒤 `dist/ask-first-eda.zip`을 업로드하세요.
 
-ZIP을 직접 만들려면 저장소 루트에서 `python scripts/package_skill.py`를 실행한 뒤 `dist/ask-first-eda.zip`을 업로드하세요.
+### Claude Code
+
+- 압축을 푼 폴더를 `<project>/.claude/skills/ask-first-eda/` 또는 `~/.claude/skills/ask-first-eda/`에 복사하세요(Release ZIP을 그 위치에 풀어도 됩니다).
+- 터미널을 프로젝트 폴더에서 열고 Claude Code를 시작하세요. 작업 폴더가 그곳에 생깁니다.
+- 한 프로젝트에만 적용하려면 프로젝트 경로를, 모든 프로젝트에 적용하려면 사용자 경로를 사용하세요.
+
+### Codex
+
+- 압축을 푼 폴더를 `<project>/.agents/skills/ask-first-eda/`에 복사하세요(Release ZIP을 그 위치에 풀어도 됩니다).
+- 스킬을 해당 프로젝트에서 사용하려면 시작 전에 터미널을 프로젝트 폴더에서 여세요.
+- 한 프로젝트에만 적용하려면 프로젝트 경로를 사용하세요.
+
+Windows에서는 `python`을 사용하고 `python3`는 사용하지 마세요. PowerShell에서는 `Copy-Item -Recurse .\skills\ask-first-eda <project>\.claude\skills\ask-first-eda`를 사용하세요(Codex는 `.agents\skills` 경로).
+
+업데이트는 설치된 폴더를 교체하거나 새 Release ZIP을 다시 업로드하면 됩니다. 제거는 폴더를 삭제하거나 앱에서 스킬을 삭제하세요.
+
+| 클라이언트 | 버전 | 날짜 | 확인 범위 | 첫 실행 |
+| --- | --- | --- | --- | --- |
+| Claude Code | 2.1.332 | 2026-11-26 | routing 4/4(install smoke) | pass (2026-11-26, clean project, support_tickets example: eda-work/delivery/report.html and eda_summary.json created in the project folder) |
+| Codex | 0.171.0 | 2026-11-26 | routing 4/4(install smoke) | covered by evaluation runs (codex exec) |
+| Claude desktop app | — | 2026-11-26 | upload and run, manual | pass (manual, 2026-11-26) |
+
+자동 확인 결과는 [설치 스모크 상태](evals/install_smoke.json)에서 확인하세요.
 
 ### 1분 안에 해보기
 

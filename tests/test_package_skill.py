@@ -177,3 +177,34 @@ def test_readme_documents_desktop_install(filename):
     assert RELEASE_URL in first_step
     assert "`ask-first-eda.zip`" in first_step
     assert "python scripts/package_skill.py" not in first_step
+
+
+@pytest.mark.parametrize("filename", ["README.md", "README.ko.md"])
+def test_readme_documents_client_specific_install_contract(filename):
+    readme = (ROOT / filename).read_text(encoding="utf-8")
+    section = readme.split("\n## Install\n" if filename == "README.md" else "\n## 설치\n", 1)[1]
+    section = section.split("\n## ", 1)[0]
+
+    assert "Python 3.10" in section
+    assert "python -m pip install -r requirements.txt" in section
+    assert "check_install.py" in section
+    assert "### Claude desktop app" in section
+    assert "### Claude Code" in section
+    assert "### Codex" in section
+    assert "~/.claude/skills/ask-first-eda/" in section
+    assert "<project>/.claude/skills/ask-first-eda/" in section
+    assert "<project>/.agents/skills/ask-first-eda/" in section
+    assert "Release zip" in section or "Release ZIP" in section
+    assert "PowerShell" in section
+    assert "Copy-Item -Recurse" in section
+    assert not re.search(r"^python3(?:\s|$)", section, re.M)
+    assert "업데이트" in section or "update" in section.lower()
+    assert "제거" in section or "remove" in section.lower()
+    assert "routing 4/4(install smoke)" in section
+    assert "upload and run, manual" in section
+    assert "pass (2026-11-26, clean project, support_tickets example: eda-work/delivery/report.html and eda_summary.json created in the project folder)" in section
+    assert "covered by evaluation runs (codex exec)" in section
+    assert "pass (manual, 2026-11-26)" in section
+    assert "TBD" not in section
+    assert "Before the rename" not in section
+    assert "이름 변경 전" not in section
