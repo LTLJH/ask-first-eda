@@ -31,6 +31,11 @@ PRIVATE_CASE_FILES = {"case.md", "domain_card.md", "expected.json", "expected_fa
 GRADER_FILES = (
     "evals/numeric_check.py", "evals/grade_run.py", "harness/roles/grader.md",
 )
+CONDITIONS = ("noskill", "prompted", "skill")
+PROMPTED_INSTRUCTION = (
+    "Ask about a business definition only when the request and the file cannot settle a choice "
+    "that changes the result, and keep the evidence for each number."
+)
 DELIVERY_REQUEST = (
     "When the analysis is complete, save an offline HTML report (`report.html`) and a JSON "
     "file with the calculated metrics (`results.json`) in `delivery/` under the working directory."
@@ -445,6 +450,18 @@ def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None
     run = ROOT / "evals" / "runs" / identifier(run_id)
     cache = evaluation_cache(run_id)
     work = cache / "work"
+    analyst_prompt = [role("blind-analyst")]
+    python_instruction = "Use `python3 -I` to run Python with pandas and matplotlib."
+    if condition == "prompted":
+        python_instruction = f"{PROMPTED_INSTRUCTION}\n{python_instruction}"
+    elif condition == "skill":
+        analyst_prompt.append("An analysis skill is available at ./ask-first-eda/SKILL.md. Read it first and follow it.")
+    analyst_prompt += [
+        python_instruction,
+        DELIVERY_REQUEST,
+        opening,
+    ]
+    prompt = "\n\n".join(analyst_prompt)
     if dry_run:
         print(f"Dry run: {case_id} / {flow} / {condition} (max analyst turns: {max_turns})")
         print(f"Workspace: {work}")
@@ -454,16 +471,9 @@ def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None
         if staged_prior is not None:
             print(f"Prior summary: {prior_summary.as_posix()} -> work/{staged_prior.as_posix()}")
         print(f"Results: {run}")
+        print(f"Analyst prompt:\n{prompt}")
         return
 
-    analyst_prompt = [role("blind-analyst")]
-    if condition == "skill":
-        analyst_prompt.append("An analysis skill is available at ./ask-first-eda/SKILL.md. Read it first and follow it.")
-    analyst_prompt += [
-        "Use `python3 -I` to run Python with pandas and matplotlib.",
-        DELIVERY_REQUEST,
-        opening,
-    ]
     simulator_role = role("user-simulator")
     simulator_cwd = cache / "simulator"
     remove_stale_role_auth(cache.parent)
@@ -508,7 +518,6 @@ def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None
     sandbox = "workspace-write"
     analyst_args = fresh_codex(ANALYST_MODEL, ANALYST_EFFORT, sandbox, work)
     args = analyst_args
-    prompt = "\n\n".join(analyst_prompt)
     thread_id = None
     card = None
     with lock_role_homes(cache):
@@ -670,7 +679,7 @@ def main():
     source.add_argument("--case", dest="case_id")
     source.add_argument("--case-dir", type=Path, help="Use a case directory outside evals/cases")
     parser.add_argument("--flow", required=True, choices=("A", "B", "C"))
-    parser.add_argument("--condition", required=True, choices=("skill", "noskill"))
+    parser.add_argument("--condition", required=True, choices=CONDITIONS)
     parser.add_argument("--max-turns", type=int, default=10, help="Maximum analyst turns")
     parser.add_argument("--run-id")
     parser.add_argument("--prior-summary", type=Path, help="Stage a .summary.json file from docs/gallery")

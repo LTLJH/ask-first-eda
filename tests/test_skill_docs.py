@@ -93,29 +93,66 @@ def evaluation(readme_text):
     return re.split(r"^## (?:Evaluation|평가)$", readme_text, flags=re.M)[1].split("\n## ")[0]
 
 
-def test_readme_timing_discloses_different_deliverables(evaluation):
-    paragraph = next((p for p in evaluation.split("\n\n") if re.search(r"4\.54\s*(?:×|배)", p)), "")
-    assert re.search(r"(?:four|4)\s*(?:initial )?(?:pairs|쌍)", paragraph, re.I)
-    assert re.search(r"noskill|without the skill|스킬 없", paragraph, re.I)
-    assert re.search(r"no reports?|did not (?:produce|create) a report|리포트.{0,24}(?:않|없)", paragraph, re.I)
-    assert re.search(r"different (?:work|deliverables)|산출물.{0,12}(?:달|달랐|다른)", paragraph, re.I)
+def test_readme_evaluation_links_current_and_earlier_results(evaluation):
+    links = re.findall(r"\]\(([^)]+)\)", evaluation)
+    assert links == ["evals/abc_summary.md", "evals/ab_summary.md"]
+    assert all((ROOT / link).is_file() for link in links)
+    assert not any(value in evaluation for value in ("4.54", "29.1%", "1.8%"))
 
 
-def test_readme_token_changes_identify_each_revision(evaluation):
-    paragraph = next((p for p in evaluation.split("\n\n") if "29.1%" in p), "")
-    assert re.search(r"\ba1\b[^.!%]*[−-]29\.1%", paragraph, re.I)
-    assert re.search(r"\ba3\b[^.!%]*[−-]1\.8%", paragraph, re.I)
-    assert re.search(r"uncached input|비캐시 입력", paragraph, re.I)
-    assert re.search(r"output tokens|출력 토큰", paragraph, re.I)
+def test_readme_evaluation_reports_scores_missed_question_and_cost(evaluation):
+    assert "18/24" in evaluation and "24/24" in evaluation
+    assert re.search(r"denominator|분모", evaluation, re.I)
+    assert re.search(r"none asked|no condition asked|묻지 않", evaluation, re.I)
+    assert re.search(r"time|시간", evaluation, re.I)
+    assert re.search(r"tokens|토큰", evaluation, re.I)
+    assert re.search(r"twice|2배", evaluation, re.I)
 
 
-def test_readme_limits_claims_about_current_version(evaluation):
-    assert re.search(r"small.{0,30}exploratory|소규모 탐색", evaluation, re.I)
-    assert any(
-        re.search(r"current (?:version|release)|현재 버전", sentence, re.I)
-        and re.search(r"no guarantee|do not guarantee|보장하지 않", sentence, re.I)
-        for sentence in re.split(r"[.!\n]", evaluation)
-    )
+def test_abc_summary_distinguishes_correct_numbers_from_confirmed_values():
+    summary = ROOT / "evals/abc_summary.md"
+    assert summary.is_file()
+    rows = [line.split("|")[2:-1] for line in summary.read_text(encoding="utf-8").splitlines()
+            if line.startswith(("| Correct numeric", "| Confirmed final"))]
+    assert [[cell.strip() for cell in row] for row in rows] == [
+        ["18/24", "24/24", "24/24"],
+        ["14/24", "18/24", "18/24"],
+    ]
+
+
+def test_contributing_documents_case_reports_and_development_workflow():
+    path = ROOT / "CONTRIBUTING.md"
+    assert path.is_file()
+    contents = path.read_text(encoding="utf-8")
+    assert ".github/ISSUE_TEMPLATE/case_report.md" in contents
+    for phrase in (
+        "synthetic",
+        "anonymized",
+        "business question",
+        "ambiguous definitions",
+        "expected",
+        "actual",
+        "client",
+        "version",
+        "python -m pip install -r requirements.txt -r requirements-dev.txt",
+        "python -m pytest -q",
+        "ln -sf ../../scripts/hooks/pre-commit .git/hooks/pre-commit",
+        "red",
+        "green",
+    ):
+        assert phrase.lower() in contents.lower()
+    assert "personal paths" in contents.lower()
+    assert "company data" in contents.lower()
+    assert "source text" in contents.lower()
+
+
+def test_readmes_cross_link_and_link_to_contributing():
+    english = (ROOT / "README.md").read_text(encoding="utf-8")
+    korean = (ROOT / "README.ko.md").read_text(encoding="utf-8")
+    assert re.search(r"\]\(README\.ko\.md\)", english)
+    assert re.search(r"\]\(README\.md\)", korean)
+    for contents in (english, korean):
+        assert re.search(r"\]\(CONTRIBUTING\.md\)", contents)
 
 
 def test_case_report_template_collects_reproduction_details():
