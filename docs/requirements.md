@@ -22,9 +22,9 @@ For unknown, corrupt or conflicting input, describe what can be read reliably. I
 
 Between Interview and Analyze, run Clean only when needed and require a passing row audit before analyzing the cleaned copy.
 
-Review these items in order. **Domain and business process → analysis goal and decision → meaning of one row → meaning, unit and denominator of each relevant column → time basis (shift, midnight boundary, timezone) → normal ranges and exceptions (shutdowns, changeovers) → meaning of missing values → join keys.** Log each item, including items settled by the request or by inspection. Use separate entries where columns or decisions can have different answers.
+Use the eight items in the skill's interview guide as an internal Ambiguity Log checklist. Record established definitions with their sources. One answer can cover multiple rows or columns sharing a rule. Record its scope and exceptions.
 
-Ask one question per turn about the earliest remaining material ambiguity. Cite file evidence, offer plausible candidate answers and allow a correction or deferral. Skip facts the file or user has established. While waiting, continue assumption-free counts of records, missing values, observed types and duplicates. Revisit an unclear answer with a narrower question. Stop when every item has a status other than `unresolved`, or when the user asks to stop. On stopping early, retain outstanding items as `unresolved` and give only explicitly conditional values for dependent conclusions. A pending reply supplies no default.
+Use the result or decision criterion in Step 2 of `SKILL.md` to choose whether to ask. Ask one question per turn, cite file evidence and allow correction or deferral. While waiting, continue assumption-free counts of records, missing values, observed types and duplicates. Honor a request to stop. Keep outstanding definitions `unresolved` and label dependent values with their conditions.
 
 | File evidence | Good question | Poor question |
 |---|---|---|

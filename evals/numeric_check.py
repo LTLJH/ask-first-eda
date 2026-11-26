@@ -583,6 +583,7 @@ def claims_agree(reference, metric, value, other, other_value, tolerance):
 def conflicting_text_claims(reference, rows, text_rows, tolerance, *, allow_undated,
                             against_summary=False, mapped_evidence=False):
     date = metric_date(reference)[1]
+    expected_parts = unit_parts(reference.get("unit"))
     for row in rows:
         index, metric, observed, period, name = candidate_for_period(row, date)
         if allow_undated and period is None:
@@ -599,6 +600,11 @@ def conflicting_text_claims(reference, rows, text_rows, tolerance, *, allow_unda
                 continue
             _, other, other_fields, other_period, _ = candidate_for_period(other_row, date)
             if "value" not in other_fields or bool(other_fields.get("conditional")) != conditional:
+                continue
+            claim_parts = unit_parts(other.get("unit"))
+            if all(expected_parts) and all(claim_parts) and (
+                tuple(part[0] for part in expected_parts) != tuple(part[0] for part in claim_parts)
+            ):
                 continue
             if not scope_matches(reference, other, date, other_period, allow_undated=allow_undated,
                                  mapped_evidence=mapped_evidence):
