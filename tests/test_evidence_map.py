@@ -122,6 +122,45 @@ def test_delivery_name_variant_goes_through_mapper(tmp_path):
     assert entry["source"] == "evidence_map"
 
 
+@pytest.mark.parametrize(("raw", "bucket"), [
+    ("84.48%", "matched"), ("84%", "mismatched"), (84.48, "mismatched"),
+])
+def test_mapped_non_schema_results_precede_transcript(tmp_path, raw, bucket):
+    mapper = load_mapper()
+    delivery = tmp_path / "delivery"
+    delivery.mkdir()
+    write_json(delivery / "results.json", {"seat_use": {"value": raw, "unit": "%"}})
+    claim = "Seat use: 30%"
+    transcript(tmp_path, ("analyst", claim))
+    numeric, flow = baseline(tmp_path, [{"name": "Utilization", "value": 84.4827, "unit": "%"}])
+
+    result = update(mapper, tmp_path, numeric, flow, lambda target: response(
+        target, location("30%", file="transcript.jsonl", quote=claim),
+        location(raw, file="delivery/results.json", path="/seat_use/value")))
+
+    [entry] = result[bucket]
+    assert entry["source"] == "evidence_map"
+    assert entry["actual"]["value"] == (84 if raw == "84%" else 84.48)
+
+
+@pytest.mark.parametrize("file", ["transcript.jsonl", "delivery/report.html"])
+def test_mapped_quotation_uses_display_precision(tmp_path, file):
+    mapper = load_mapper()
+    claim = "Seat use: 84.48%"
+    if file == "transcript.jsonl":
+        transcript(tmp_path, ("analyst", claim))
+    else:
+        report = tmp_path / file
+        report.parent.mkdir()
+        report.write_text(f"<p>{claim}</p>")
+    numeric, flow = baseline(tmp_path, [{"name": "Utilization", "value": 84.4827, "unit": "%"}])
+
+    result = update(mapper, tmp_path, numeric, flow, lambda target: response(
+        target, location("84.48%", file=file, quote=claim)))
+
+    assert result["matched"][0]["actual"]["value"] == 84.48
+
+
 @pytest.mark.parametrize(("reference_unit", "unit", "bucket"), [
     ("초/건", "초", "matched"), ("초/건", "초/t", "mismatched"), ("kg/event", "초", "mismatched"),
 ])
@@ -145,7 +184,7 @@ def test_mapped_average_compares_count_notation_and_dimensions(tmp_path, referen
     pytest.param(1, None, None, 18, {"value"}, id="wrong-value"),
     pytest.param(1, None, 16, 17, {"numerator"}, id="wrong-numerator"),
     pytest.param(22, None, None, 17, {"denominator", "numerator"}, id="average-null-components"),
-    pytest.param(None, 1, 17, 17, {"denominator"}, id="expected-null-denominator"),
+    pytest.param(None, 24, 17, 17, set(), id="expected-null-denominator"),
 ])
 def test_mapped_unit_denominator_compares_value_and_present_components(tmp_path, left, right,
                                                                       numerator, value, differences):

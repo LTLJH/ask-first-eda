@@ -12,10 +12,10 @@ import sys
 from tempfile import TemporaryDirectory, mkdtemp
 
 from numeric_check import (
-    CLAUSE_BREAK, CONDITIONAL, DATE_RANGE, DATE_SCOPE, FORMULA, NUMBER, SHORT_DAY, UNIT_SUFFIX,
-    DateRange, allows_undated, comparable_fields, compare_metrics, last_analyst_text,
-    metric_date, parse_number, parse_period, read_json, report_path, reports_text,
-    summary_path, transcript_metrics, unit_parts,
+    CLAUSE_BREAK, CONDITIONAL, DATE_RANGE, DATE_SCOPE, DISPLAY_QUANTITY, FORMULA, NUMBER, SHORT_DAY, UNIT_SUFFIX,
+    DateRange, allows_undated, comparable_fields, compare_metrics, delivery_results_path, display_decimals,
+    last_analyst_text, metric_date, parse_number, parse_period, read_json, report_path, reports_text, summary_path,
+    transcript_metrics, unit_parts,
 )
 from run_case import ROOT, call_codex, fresh_codex, json_text, make_role_home, role
 
@@ -30,7 +30,6 @@ TRANSCRIPT = "transcript.jsonl"
 PENDING_BUCKETS = ("missing", "unparsed")
 TARGET_FIELDS = ("name", "definition", "unit", "date", "month", "period")
 RAW_NUMBER = NUMBER.replace("[+-]", "[+−-]")
-QUANTITY = re.compile(rf"({RAW_NUMBER})\s*(%)?")
 QUOTED_QUANTITY = re.compile(
     rf"(?<![a-zA-Z0-9_.,+−-])({RAW_NUMBER})(?:\s*(%)(?!\w))?(?![\d_]|%(?!\w)|[.,]\d|[eE][+−-]?\d|-\d)"
 )
@@ -71,13 +70,15 @@ def build_targets(numeric, expected_flow, cleaning=None):
 
 def analyst_sources(run, *, for_prompt=False):
     summary = summary_path(run)
+    results = delivery_results_path(run)
     report = report_path(run, summary)
     sources = {}
-    for path, kind in ((summary, "json"), (report, "html"), (run / TRANSCRIPT, "message")):
+    for path, kind in ((summary, "json"), (results if results != summary else None, "results_json"),
+                       (report, "html"), (run / TRANSCRIPT, "message")):
         if path is None or not path.is_file() or path.resolve() != path:
             continue
         file = path.relative_to(run).as_posix()
-        if kind == "json":
+        if kind in ("json", "results_json"):
             text = path.read_text(encoding="utf-8", errors="replace")
         elif kind == "html":
             text = reports_text(run, path, for_grader=for_prompt)
@@ -251,15 +252,14 @@ def quantity(raw):
         if len(units) > 1:
             raise ValueError("Expected a single representation for a numeric series")
         return [value for value, _, _ in items], True in units, None
-    match = QUANTITY.fullmatch(str(raw).strip())
+    match = DISPLAY_QUANTITY.fullmatch(str(raw).strip())
     if match is None:
         raise ValueError("Expected a numeric token")
     token, percent = match.groups()
     value = parse_number(token.replace("−", "-"))
     if isinstance(value, float) and not math.isfinite(value):
         raise ValueError("Expected a finite quantity")
-    mantissa = token.lower().partition("e")[0]
-    return value, bool(percent), len(mantissa.partition(".")[2])
+    return value, bool(percent), display_decimals(token)
 
 
 def json_claim(data, path, location):
@@ -275,11 +275,13 @@ def json_claim(data, path, location):
             raise ValueError("JSON path does not exist")
     if not same_raw(node, location.get("raw")):
         raise ValueError("JSON path does not match raw")
-    value, percent, _ = quantity(node)
+    value, percent, places = quantity(node)
     dated_keys = [part for part in parts if parse_period(part) or SHORT_DAY.fullmatch(part)]
     label = next((part for part in reversed(parts)
                   if part not in ("value", "values", *dated_keys) and not part.isdigit()), "")
     metric = {"name": label, "value": value}
+    if isinstance(node, str):
+        metric["_display_decimals"] = places
     for context, _ in contexts:
         for field, content in context.items():
             if (not field.startswith("_") and isinstance(content, str)
@@ -413,8 +415,7 @@ def quoted_claim(text, location, kind):
         elif field not in metric and type(hint := location.get(field)) in (str, int, float):
             if any(other != token and str(hint) == other[1] for other in numbers):
                 metric[field] = quantity(hint)[0]
-    if kind == "html":
-        # Display precision is used only in the comparator's conflict check.
+    if places or kind == "html":
         metric["_display_decimals"] = places
     return metric, actual.start()
 
@@ -428,7 +429,7 @@ def verify_location(sources, location):
     kind, text = sources[file]
     path = location.get("json_path")
     try:
-        if kind == "json":
+        if kind in ("json", "results_json"):
             if not isinstance(path, str) or location.get("quote") is not None:
                 return None
             metric, position = json_claim(json.loads(text, parse_float=Decimal), path, location)
@@ -443,7 +444,7 @@ def verify_location(sources, location):
 
 def mapped_result(reference, claims, report, tolerance, dates, allow_undated, sign_agnostic):
     report_name, report_text = report
-    for kind in ("json", "message", "html"):
+    for kind in ("json", "results_json", "message", "html"):
         rows = [metric for source, metric in claims if source == kind]
         if not rows:
             continue
@@ -456,7 +457,7 @@ def mapped_result(reference, claims, report, tolerance, dates, allow_undated, si
                 return report_name, report_rows
 
         compared = compare_metrics(
-            [reference], [], rows, tolerance, dates, named_evidence=kind != "json",
+            [reference], [], rows, tolerance, dates, named_evidence=kind in ("message", "html"),
             report_source=report_name if kind == "html" else None, report_metrics=report_metrics,
             sign_agnostic_metrics=sign_agnostic, allow_undated=allow_undated,
             evidence_source="evidence_map", mapped_evidence=True,

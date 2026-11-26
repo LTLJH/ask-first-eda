@@ -1582,7 +1582,7 @@ class EvalToolsTests(unittest.TestCase):
 
                 self.assertEqual([entry["name"] for entry in result[bucket]], ["Batch rate"])
 
-    def test_a4_rounding_applies_to_report_conflicts_but_not_the_answer_key(self):
+    def test_report_rounding_matches_the_answer_key(self):
         self.write_expected([{"name": "Batch rate", "value": 111.11111111111111}], tolerance=0.000001)
         run = self.prepare_run()
         delivery = run / "delivery"
@@ -1598,9 +1598,7 @@ class EvalToolsTests(unittest.TestCase):
 
         result = self.check_numbers(run)
 
-        [mismatch] = result["mismatched"]
-        self.assertIn("value", mismatch["differences"])
-        self.assertNotIn("report_conflict", mismatch["differences"])
+        self.assertEqual([entry["name"] for entry in result["matched"]], ["Batch rate"])
 
     def test_a4_natural_sentence_with_unparsed_formula_requires_review(self):
         self.env["FAKE_GRADE_PASS"] = "1"
@@ -1873,7 +1871,11 @@ def compare_metrics():
     pytest.param({"value": 24}, "mismatched", {"value"}, id="wrong-value"),
     pytest.param({"numerator": 30}, "mismatched", {"numerator"}, id="wrong-numerator"),
     pytest.param({"numerator": 25}, "matched", set(), id="matching-numerator"),
-    pytest.param({"denominator": 2}, "mismatched", {"denominator"}, id="wrong-denominator"),
+    pytest.param({"denominator": 24}, "matched", set(), id="submitted-denominator-is-ignored"),
+    pytest.param({"name": "reported quantity", "denominator": 24, "numerator": 25},
+                 "matched", set(), id="ignore-denominator-across-names"),
+    pytest.param({"denominator": 24, "numerator": 30}, "mismatched", {"numerator"},
+                 id="still-check-submitted-numerator"),
 ])
 def test_compare_metrics_accepts_null_numerator_for_null_denominator(compare_metrics, changes, bucket, differences):
     reference = {"name": "measurement", "value": 25, "numerator": 25, "denominator": None}
@@ -3019,3 +3021,88 @@ def test_unit_denominator_compares_independently_of_definition_wording(compare_m
     submitted = {**metric, "denominator": None, "definition": "defect count divided by checked count"}
     result = compare_metrics([metric], [], [submitted], Decimal("0.01"), [])
     assert len(result["matched"]) == 1, result
+
+
+def test_non_null_denominator_must_match_for_an_average(compare_metrics):
+    reference = {"name": "average delay", "value": 6, "denominator": 22, "unit": "s"}
+    submitted = {**reference, "denominator": 24}
+
+    result = compare_metrics([reference], [], [submitted], Decimal("0.001"), [])
+
+    [entry] = result["mismatched"]
+    assert entry["differences"] == {"denominator": {"expected": 22, "actual": 24}}
+
+
+@pytest.mark.parametrize(("claim", "bucket"), [("84.48", "matched"), ("84", "mismatched"),
+                                                ("84.4", "mismatched")])
+@pytest.mark.parametrize("source", ["transcript_text", "report_html", "results.json"])
+def test_text_claim_uses_display_precision(tmp_path, source, claim, bucket):
+    check_run = eval_function("numeric_check.py", "check_run")
+    reference = {"name": "utilization", "value": 84.4827, "unit": "%"}
+    expected = {"absolute_tolerance": 0.001, "flows": {"A": {"metrics": [reference]}}}
+    report = None
+    if source == "transcript_text":
+        write_transcript(tmp_path, ("analyst", f"utilization: {claim}%"))
+    else:
+        # A contradictory transcript must never override the results file.
+        if source == "results.json":
+            write_transcript(tmp_path, ("analyst", "utilization: 10%"))
+            delivery = tmp_path / "delivery"
+            delivery.mkdir()
+            (delivery / "results.json").write_text(json.dumps({
+                "metrics": [{"name": "utilization", "value": claim, "unit": "%"}],
+            }))
+        else:
+            report = tmp_path / "report.html"
+            report.write_text(f"<p>utilization: {claim}%</p>")
+
+    result = check_run(tmp_path, "A", expected, None, report)
+
+    [entry] = result[bucket]
+    assert entry.get("source", result["source"]) == source
+    assert entry["actual"]["value"] == float(claim)
+
+
+@pytest.mark.parametrize(("unit", "value", "tolerance"), [("ratio", 0.844827, 0.000001),
+                                                         ("%", 84.49, 0.02)])
+def test_display_precision_respects_unit_scale_and_absolute_tolerance(tmp_path, unit, value, tolerance):
+    check_run = eval_function("numeric_check.py", "check_run")
+    reference = {"name": "utilization", "value": value, "unit": unit}
+    expected = {"absolute_tolerance": tolerance, "flows": {"A": {"metrics": [reference]}}}
+    write_transcript(tmp_path, ("analyst", "utilization: 84.48%"))
+
+    assert check_run(tmp_path, "A", expected, None, None)["matched"]
+
+
+@pytest.mark.parametrize("source", ["eda_summary.json", "results.json"])
+def test_json_number_uses_only_absolute_tolerance(tmp_path, source):
+    check_run = eval_function("numeric_check.py", "check_run")
+    reference = {"name": "utilization", "value": 84.4827, "unit": "%"}
+    expected = {"absolute_tolerance": 0.001, "flows": {"A": {"metrics": [reference]}}}
+    metric = {**reference, "value": 84.48, "_display_decimals": 2}
+    summary = None
+    if source == "eda_summary.json":
+        write_summary(tmp_path, [metric])
+        summary = tmp_path / source
+    else:
+        delivery = tmp_path / "delivery"
+        delivery.mkdir()
+        (delivery / source).write_text(json.dumps({"metrics": [metric]}))
+
+    result = check_run(tmp_path, "A", expected, summary, None)
+
+    [entry] = result["mismatched"]
+    assert entry["differences"] == {"value": {"expected": 84.4827, "actual": 84.48}}
+
+
+def test_results_duplicates_ignore_denominators_for_a_non_ratio(tmp_path):
+    check_run = eval_function("numeric_check.py", "check_run")
+    reference = {"name": "item count", "value": 25, "numerator": 25, "denominator": None}
+    expected = {"absolute_tolerance": 0, "flows": {"A": {"metrics": [reference]}}}
+    delivery = tmp_path / "delivery"
+    delivery.mkdir()
+    (delivery / "results.json").write_text(json.dumps({
+        "metrics": [{**reference, "denominator": value} for value in (None, 24)],
+    }))
+
+    assert check_run(tmp_path, "A", expected, None, None)["matched"]

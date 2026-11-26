@@ -6,6 +6,7 @@ from fractions import Fraction
 from html.parser import HTMLParser
 from itertools import chain
 import json
+import math
 from pathlib import Path
 import re
 import sys
@@ -18,6 +19,7 @@ from run_case import DELIVERY_DIR, ROOT, case_inputs, case_path, input_fingerpri
 
 
 NUMBER = r"[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?"
+DISPLAY_QUANTITY = re.compile(rf"({NUMBER.replace('[+-]', '[+−-]')})\s*(%)?")
 NUMBER_IN_TEXT = re.compile(rf"(?<![a-zA-Z0-9_.,]){NUMBER}(?![\d_]|[.,]\d)")
 FORMULA = re.compile(rf"^({NUMBER})\s*[/÷]\s*({NUMBER})\s*=\s*({NUMBER})(?![\d.])")
 ARITHMETIC_IN_TEXT = re.compile(rf"{NUMBER}\s*[-+*/÷×−]\s*{NUMBER}\s*=\s*{NUMBER}")
@@ -553,17 +555,18 @@ def unit_methods(reference, metric, *, allow_count_notation=True):
     return UNSCALED if scale == 1 and not offset else (("unit_conversion", scale, offset),)
 
 
-def match_value(expected, actual, tolerance, methods, *, direction=1):
+def match_value(expected, actual, tolerance, methods, *, direction=1, display_step=0):
     return next((method for method, scale, offset in methods
-                 if agrees(expected, actual, tolerance, scale, offset, direction=direction)), None)
+                 if agrees(expected, actual, max(tolerance, display_step * abs(scale)),
+                           scale, offset, direction=direction)), None)
 
 
-def display_half_step(metric):
+def display_half_step(metric, *, allow_integer=False):
     places = metric.get("_display_decimals")
-    return 0 if places is None else Fraction(1, 2 * 10 ** places)
+    return Fraction(1, 2 * 10 ** places) if places is not None and (places > 0 or allow_integer) else 0
 
 
-def claims_agree(reference, metric, value, other, other_value, tolerance):
+def claims_agree(reference, metric, value, other, other_value, tolerance, *, display_steps):
     pair_methods = unit_methods(metric, other)
     left, right = Decimal(str(value)), Decimal(str(other_value))
     if not pair_methods or not left.is_finite() or not right.is_finite():
@@ -573,7 +576,7 @@ def claims_agree(reference, metric, value, other, other_value, tolerance):
     else:
         left_methods, right_methods = UNSCALED, pair_methods
     left, right = Fraction(left), Fraction(right)
-    left_step, right_step = display_half_step(metric), display_half_step(other)
+    left_step, right_step = display_steps
     return any(abs(left * scale + offset - (right * other_scale + other_offset))
                <= max(tolerance, left_step * abs(scale), right_step * abs(other_scale))
                for _, scale, offset in left_methods
@@ -581,7 +584,7 @@ def claims_agree(reference, metric, value, other, other_value, tolerance):
 
 
 def conflicting_text_claims(reference, rows, text_rows, tolerance, *, allow_undated,
-                            against_summary=False, mapped_evidence=False):
+                            against_summary=False, report_display=False, mapped_evidence=False):
     date = metric_date(reference)[1]
     expected_parts = unit_parts(reference.get("unit"))
     for row in rows:
@@ -632,7 +635,10 @@ def conflicting_text_claims(reference, rows, text_rows, tolerance, *, allow_unda
                 for left in (reference, metric)
             ):
                 continue
-            if not claims_agree(reference, metric, value, other, other_value, tolerance):
+            # The report consistency check also allows integer displays of precise claims.
+            display_steps = (display_half_step(metric, allow_integer=True) if report_display else 0,
+                             display_half_step(other, allow_integer=True) if report_display or against_summary else 0)
+            if not claims_agree(reference, metric, value, other, other_value, tolerance, display_steps=display_steps):
                 return [{"value": value, "unit": metric.get("unit")},
                         {"value": other_value, "unit": other.get("unit")}]
     return []
@@ -643,7 +649,7 @@ def omitted_components(fields, observed, *, same_identity=True):
         return ()
     denominator = fields.get("denominator")
     if "denominator" in fields and denominator is None:
-        return ("numerator",) if observed.get("numerator") is None else ()
+        return ("denominator", "numerator") if observed.get("numerator") is None else ("denominator",)
     if not same_identity or type(denominator) not in (int, float) or denominator != 1:
         return ()
     if "denominator" not in observed:
@@ -670,7 +676,8 @@ def tuple_match(reference, fields, metric, observed, tolerance, *, check_units=T
         return None
     if "value" not in fields:
         return methods[0][0]
-    return match_value(fields["value"], observed["value"], tolerance, methods, direction=direction)
+    return match_value(fields["value"], observed["value"], tolerance, methods,
+                       direction=direction, display_step=display_half_step(metric))
 
 
 def field_differences(expected, observed, tolerance, *, tuple_matched=False, omitted=()):
@@ -836,6 +843,11 @@ def parse_number(text):
     return float(text) if re.search(r"[.eE]", text) else int(text)
 
 
+def display_decimals(token):
+    mantissa = token.lower().partition("e")[0]
+    return len(mantissa.partition(".")[2])
+
+
 def text_clauses(text):
     return [clause for line in text.splitlines() for clause in CLAUSE_BREAK.split(line)
             if clause.strip() and not clause.rstrip().endswith(("?", "？"))]
@@ -939,9 +951,8 @@ def transcript_metrics(text, expected_metrics, *, is_report=False):
                             found[field] = parse_number(component[1])
                 else:
                     continue
-                if is_report:
-                    mantissa = re.split(r"[eE]", value_text, maxsplit=1)[0]
-                    found["_display_decimals"] = len(mantissa.partition(".")[2])
+                if (places := display_decimals(value_text)) or is_report:
+                    found["_display_decimals"] = places
                 numeric_end = (formula or number).end()
                 unit_tail = tail[numeric_end:].lstrip(" \t*`_")
                 if unit := UNIT_SUFFIX.match(unit_tail):
@@ -993,10 +1004,23 @@ def delivery_evidence(run, references):
     rows, text = [], []
 
     def add_metric(metric):
-        if (isinstance(metric, dict) and isinstance(metric.get("name"), str)
-                and metric["name"].strip()
-                and type(comparable_fields(metric).get("value")) in (int, float, list)
-                and (metric.get("unit") is None or isinstance(metric["unit"], str))):
+        if (not isinstance(metric, dict) or not isinstance(metric.get("name"), str)
+                or not metric["name"].strip()
+                or (metric.get("unit") is not None and not isinstance(metric["unit"], str))):
+            return
+        metric = {key: value for key, value in metric.items() if key != "_display_decimals"}
+        key = "values" if "values" in metric else "value"
+        value = metric.get(key)
+        if isinstance(value, str) and (quantity := DISPLAY_QUANTITY.fullmatch(value.strip())):
+            token, percent = quantity.groups()
+            value = parse_number(token.replace("−", "-"))
+            if type(value) is float and not math.isfinite(value):
+                return
+            metric[key] = value
+            metric["_display_decimals"] = display_decimals(token)
+            if percent:
+                metric["unit"] = "%"
+        if type(value) in (int, float, list):
             rows.append(metric)
 
     def add_claims(section):
@@ -1132,10 +1156,12 @@ def compare_metrics(required, optional, actual, tolerance, dates, *, named_evide
         elif method is None and "value" in entry["expected"] and "value" in observed:
             value = entry["expected"]["value"]
             if len(rows) == 1:
-                values_match = match_value(value, observed["value"], tolerance, methods[0])
+                values_match = match_value(value, observed["value"], tolerance, methods[0],
+                                           display_step=display_half_step(rows[0][1]))
             else:
                 values_match = len(value) == len(rows) and all(
-                    match_value(expected, row[2]["value"], tolerance, allowed)
+                    match_value(expected, row[2]["value"], tolerance, allowed,
+                                display_step=display_half_step(row[1]))
                     for expected, row, allowed in zip(value, rows, methods)
                 )
             if values_match:
@@ -1144,7 +1170,8 @@ def compare_metrics(required, optional, actual, tolerance, dates, *, named_evide
                 differences["value"] = {"expected": value, "actual": observed["value"]}
         if text_rows and not entry["expected"].get("conditional"):
             if claims := conflicting_text_claims(reference, rows, text_rows, tolerance,
-                                                 allow_undated=allow_undated, mapped_evidence=mapped_evidence):
+                                                 allow_undated=allow_undated, report_display=report_source is not None,
+                                                 mapped_evidence=mapped_evidence):
                 conflict = ("results_conflict" if delivery_source else "report_conflict"
                             if report_source is not None else "transcript_conflict")
                 differences[conflict] = {"claims": claims}
@@ -1299,6 +1326,8 @@ def check_run(run, flow, expected, summary, report):
             submitted = read_json(summary)
             validate_sidecar(submitted)
             actual = metric_list(submitted["metrics"])
+            for metric in actual:
+                metric.pop("_display_decimals", None)
         except (OSError, ValueError, KeyError, TypeError) as error:
             summary_error = f"Invalid {summary.name} schema or content: {error}"
             actual = []
