@@ -1,13 +1,13 @@
 # Seoul Bike walkthrough
 
 Seoul Bike Sharing Demand comes from the UCI Machine Learning Repository under CC BY 4.0. The conversation includes replies from a simulated user.
-[Dataset provenance and license](../../examples/seoul_bike/SOURCE.md)
+[Dataset provenance and license](https://github.com/LTLJH/ask-first-eda/blob/main/examples/seoul_bike/SOURCE.md)
 
 ## Step 0 — Input
 
 | File | Size | Format |
 | --- | --- | --- |
-| [`SeoulBikeData.csv`](../../examples/seoul_bike/SeoulBikeData.csv) | 604,166 bytes | CSV |
+| [`SeoulBikeData.csv`](https://github.com/LTLJH/ask-first-eda/blob/main/examples/seoul_bike/SeoulBikeData.csv) | 604,166 bytes | CSV |
 
 The analysis read lines 1–8,761 in Windows-1252. Line 1 is the header. The 8,760 records contain 14 fields and cover every recorded hour across 365 dates, with no blank cells.
 

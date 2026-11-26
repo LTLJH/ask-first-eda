@@ -1,13 +1,13 @@
 # Equipment Sensors walkthrough
 
 These synthetic current and vibration readings for four pumps are licensed under MIT. The conversation includes replies from a simulated user.
-[Dataset provenance and license](../../examples/equipment_sensors/SOURCE.md)
+[Dataset provenance and license](https://github.com/LTLJH/ask-first-eda/blob/main/examples/equipment_sensors/SOURCE.md)
 
 ## Step 0 — Input
 
 | File | Size | Format |
 | --- | --- | --- |
-| [`sensor_readings.parquet`](../../examples/equipment_sensors/sensor_readings.parquet) | 716,362 bytes | Parquet |
+| [`sensor_readings.parquet`](https://github.com/LTLJH/ask-first-eda/blob/main/examples/equipment_sensors/sensor_readings.parquet) | 716,362 bytes | Parquet |
 
 The analysis read all four Parquet row groups, covering 34,560 rows and seven columns. Each observation is for one pump and one five-minute timestamp in September 2025, Asia/Seoul.
 

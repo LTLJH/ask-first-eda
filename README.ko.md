@@ -9,6 +9,9 @@ Ask First EDA는 지표의 계산 기준을 먼저 묻고, 그 기준으로 데�
 | 10:00–11:00 | 가동 | 22 |
 | 11:00–12:00 | 가동 | 20 |
 
+[예제 리포트 바로 보기](https://ltljh.github.io/ask-first-eda/gallery/support_tickets.html) · [갤러리 보기](https://ltljh.github.io/ask-first-eda/gallery/index.html)\
+[Release에서 ZIP 받기](https://github.com/LTLJH/ask-first-eda/releases/latest)
+
 네 시간 동안 60개를 생산했습니다. 시간당 생산량은 전체 근무 시간 기준으로 15개/h, 가동한 세 시간 기준으로 20개/h입니다.
 
 > 시간당 생산량을 계산할 때 설비가 멈춘 한 시간도 포함할까요?
@@ -42,9 +45,11 @@ Claude Code는 사용자 전역 경로인 `~/.claude/skills/ask-first-eda/`도 �
 
 ### Claude desktop app
 
-1. 저장소 루트에서 `python scripts/package_skill.py`를 실행하세요.
-2. Claude 데스크톱 앱의 **Settings → Skills**에서 `dist/ask-first-eda.zip`을 업로드하세요. 메뉴 위치가 다르면 **Customize → Skills** 또는 사이드바의 **Plugins**를 확인하세요.
+1. [최신 Release](https://github.com/LTLJH/ask-first-eda/releases/latest)에서 `ask-first-eda.zip`을 받으세요.
+2. Claude 데스크톱 앱의 **Settings → Skills**에서 ZIP을 업로드하세요. 메뉴 위치가 다르면 **Customize → Skills** 또는 사이드바의 **Plugins**를 확인하세요.
 3. 앱에서는 패키지 설치가 차단될 수 있습니다. Claude에게 업로드한 스킬의 `scripts/check_install.py`를 실행해 사용 가능한 의존성을 확인해 달라고 요청하세요.
+
+ZIP을 직접 만들려면 저장소 루트에서 `python scripts/package_skill.py`를 실행한 뒤 `dist/ask-first-eda.zip`을 업로드하세요.
 
 ### 1분 안에 해보기
 

@@ -9,6 +9,9 @@ Ask First EDA asks how you define your metrics before it calculates them and bui
 | 10:00–11:00 | Running | 22 |
 | 11:00–12:00 | Running | 20 |
 
+[View an example report](https://ltljh.github.io/ask-first-eda/gallery/support_tickets.html) · [Browse the gallery](https://ltljh.github.io/ask-first-eda/gallery/index.html)\
+[Download the ZIP from Releases](https://github.com/LTLJH/ask-first-eda/releases/latest)
+
 The line produced 60 units. It averaged 15 units/h over the full shift and 20 units/h over the three running hours.
 
 > Should I include the stopped hour when I calculate hourly output?
@@ -42,9 +45,11 @@ Before the rename, project-scoped routing passed all four checks per client on C
 
 ### Claude desktop app
 
-1. Run `python scripts/package_skill.py` from the repository root.
-2. In the Claude desktop app, upload `dist/ask-first-eda.zip` from **Settings → Skills** if available. You can also look under **Customize → Skills** or the **Plugins** sidebar.
+1. Download `ask-first-eda.zip` from the [latest Release](https://github.com/LTLJH/ask-first-eda/releases/latest).
+2. In the Claude desktop app, upload the ZIP from **Settings → Skills** if available. You can also look under **Customize → Skills** or the **Plugins** sidebar.
 3. The app may block package installation. Ask Claude to run the uploaded skill’s `scripts/check_install.py` to check which dependencies are available.
+
+To build the ZIP locally, run `python scripts/package_skill.py` from the repository root and upload `dist/ask-first-eda.zip`.
 
 ### Try it in one minute
 

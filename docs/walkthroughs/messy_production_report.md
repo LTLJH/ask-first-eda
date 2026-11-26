@@ -3,13 +3,13 @@
 This example shows how the skill follows the user’s language.
 
 This synthetic workbook simulates factory production logs and is licensed under MIT. The conversation includes replies from a simulated user.
-[Dataset provenance and license](../../examples/messy_production_report/SOURCE.md)
+[Dataset provenance and license](https://github.com/LTLJH/ask-first-eda/blob/main/examples/messy_production_report/SOURCE.md)
 
 ## Step 0 — Input
 
 | File | Size | Format |
 | --- | --- | --- |
-| [`daily_report.xlsx`](../../examples/messy_production_report/daily_report.xlsx) | 7,427 bytes | Excel (.xlsx) |
+| [`daily_report.xlsx`](https://github.com/LTLJH/ask-first-eda/blob/main/examples/messy_production_report/daily_report.xlsx) | 7,427 bytes | Excel (.xlsx) |
 
 The March sheet covers `A1:F31` and the April sheet covers `A1:F32`. The headers occupy rows 4–5 in both sheets, with merged ranges `B4:C4` and `D4:E4`. March has 21 dated records and April has 22.
 
@@ -130,7 +130,7 @@ Line A’s output rose 5,820 kg and utilization fell 4.26 percentage points. Lin
 
 ## Next month
 
-This follow-on run used the synthetic May workbook from the [next-month evaluation case](../../evals/cases/production_next_month/input.xlsx). The simulated user supplied the previous analysis as `eda_summary.json`.
+This follow-on run used the synthetic May workbook from the [next-month evaluation case](https://github.com/LTLJH/ask-first-eda/blob/main/evals/cases/production_next_month/input.xlsx). The simulated user supplied the previous analysis as `eda_summary.json`.
 
 > **User (Korean):** 5월 생산 일보 올렸어요. 지난달 분석한 자료는 옆에 `eda-work/` 폴더로 두었어요. 지난달까지 쓰던 기준 그대로, 5월에 A라인과 B라인이 각각 몇 kg 생산했고 가동률은 몇 %였는지 정리해 주세요.
 >
