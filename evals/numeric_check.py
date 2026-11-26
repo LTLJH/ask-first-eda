@@ -979,8 +979,7 @@ def delivery_results_path(run):
 
 def delivery_evidence(run, references):
     path = delivery_results_path(run)
-    meta = run / "meta.json"
-    if path is None or not meta.is_file() or read_json(meta).get("condition") != "skill":
+    if path is None:
         return [], []
     try:
         data = read_json(path)

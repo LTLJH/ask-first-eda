@@ -258,8 +258,8 @@ class EvalToolsTests(unittest.TestCase):
         return self.invoke("run_case.py", "--case", "demo", "--flow", "B", "--condition",
                            condition, "--run-id", condition, *args)
 
-    def test_a5_runner_requests_the_same_neutral_delivery_in_both_conditions(self):
-        for condition in ("skill", "noskill"):
+    def test_runner_uses_the_same_input_opening_and_delivery_in_all_conditions(self):
+        for condition in ("noskill", "prompted", "skill"):
             self.run_case(condition, "--max-turns", 1)
 
         def delivery_line(prompt):
@@ -267,9 +267,15 @@ class EvalToolsTests(unittest.TestCase):
                       if "report.html" in line and "results.json" in line]
             return line
 
-        skill, noskill = self.read_calls()
-        delivery = delivery_line(skill["prompt"])
-        self.assertEqual(delivery, delivery_line(noskill["prompt"]))
+        noskill, prompted, skill = (call["prompt"] for call in self.read_calls())
+        prompt_line = ("Ask about a business definition only when the request and the file "
+                       "cannot settle a choice that changes the result, and keep the evidence for each number.")
+        skill_line = "An analysis skill is available at ./ask-first-eda/SKILL.md. Read it first and follow it."
+        self.assertEqual(prompted.count(prompt_line), 1)
+        self.assertEqual(prompted.replace(f"{prompt_line}\n", "", 1), noskill)
+        self.assertEqual(skill.replace(f"\n\n{skill_line}", "", 1), noskill)
+        self.assertTrue(noskill.endswith("\n\nOpening B"))
+        delivery = delivery_line(noskill)
         for text in ("offline", "delivery/", "metrics"):
             self.assertIn(text, delivery.lower())
         self.assertNotRegex(delivery, r"(?i)skill|eda_summary|ambiguity")
@@ -277,6 +283,17 @@ class EvalToolsTests(unittest.TestCase):
             "If other instructions specify a delivery location, use that location without making copies.",
             delivery,
         )
+        metadata = [json.loads((self.run_dir(condition) / "meta.json").read_text())
+                    for condition in ("noskill", "prompted", "skill")]
+        self.assertEqual(set(metadata[0]["input_sha256"]), {"input.csv"})
+        for item in metadata[1:]:
+            for key in ("input_sha256", "models", "efforts"):
+                self.assertEqual(item[key], metadata[0][key])
+        self.assertFalse((self.cache_dir("prompted") / "work/ask-first-eda").exists())
+
+    def test_blind_analyst_role_leaves_interview_and_evidence_policy_to_the_condition(self):
+        role_text = (ROOT / "harness/roles/blind-analyst.md").read_text()
+        self.assertNotRegex(role_text, r"(?i)\b(ask\b|questions\b|interview|ambigu\w*|evidence|traceable)")
 
     def test_a5_runner_records_reproducibility_metadata_for_both_conditions(self):
         paths = {"evals/numeric_check.py", "evals/grade_run.py", "harness/roles/grader.md"}
@@ -564,6 +581,10 @@ class EvalToolsTests(unittest.TestCase):
         output = self.run_case("skill", "--dry-run")
         self.assertIn("Dry run", output)
         self.assertIn("input.csv", output)
+        self.assertIn("Analyst prompt:\n", output)
+        prompt = output.split("Analyst prompt:\n", 1)[1]
+        self.assertIn("Read it first and follow it.", prompt)
+        self.assertTrue(prompt.rstrip().endswith("Opening B"))
         self.assertFalse(self.calls.exists())
         self.assertFalse(self.run_dir("skill").exists())
         self.assertFalse((self.home / ".cache").exists())
@@ -724,11 +745,10 @@ class EvalToolsTests(unittest.TestCase):
         out = self.repo / "ab.md"
         self.invoke("ab_summary.py", "--runs", run, self.run_dir("noskill"), "--out", out)
         report = out.read_text()
-        self.assertIn("| skill | demo | B | skill | pass | pass | 0 | 1 | 2 | 3 | 4.125 | 30 | yes | 2 |",
+        self.assertIn("| skill | demo | B | skill | pass | pass | 0 | 1 | 3 | 3 | 4.125 | 30 | yes | 2 |",
                       report)
         self.assertIn("| noskill | demo | B | noskill |", report)
         self.assertIn("| demo | B | skill | noskill |", report)
-        self.assertIn("These 4 pairs are an exploratory sample, too small to draw statistical conclusions.", report)
         self.assertNotIn(str(self.scratch.name), report)
 
     def test_ab_summary_does_not_merge_distinct_case_dirs_with_same_names(self):
@@ -2228,7 +2248,28 @@ def test_a4_parse_grade_accepts_review():
     parse_grade = eval_function("grade_run.py", "parse_grade")
     grade = {"critical_failures": [], "quality_scores": {}, "evidence": [],
              "numbers_verdict": "review", "overall": "review"}
+    assert parse_grade(json.dumps(grade)) == {**grade, "unsupported_assumptions": None}
+
+
+@pytest.mark.parametrize("count", [0, 3])
+def test_grade_keeps_unsupported_assumption_count_in_json_and_markdown(count):
+    parse_grade = eval_function("grade_run.py", "parse_grade")
+    grade_markdown = eval_function("grade_run.py", "grade_markdown")
+    grade = {"critical_failures": [], "quality_scores": {}, "evidence": [],
+             "numbers_verdict": "pass", "overall": "pass", "unsupported_assumptions": count}
+
     assert parse_grade(json.dumps(grade)) == grade
+    assert f"**Unsupported assumptions** {count}" in grade_markdown(grade)
+
+
+@pytest.mark.parametrize("count", [-1, True, 1.5, "3"])
+def test_parse_grade_rejects_invalid_unsupported_assumption_count(count):
+    parse_grade = eval_function("grade_run.py", "parse_grade")
+    grade = {"critical_failures": [], "quality_scores": {}, "evidence": [],
+             "numbers_verdict": "pass", "overall": "pass", "unsupported_assumptions": count}
+
+    with pytest.raises(ValueError, match="unsupported_assumptions"):
+        parse_grade(json.dumps(grade))
 
 
 @pytest.mark.parametrize("unit", ["percent", "per cent"])
@@ -2462,6 +2503,103 @@ def test_ab_summary_renders_analyst_cost(analyst_metrics_run, tmp_path):
     assert row[:9] == ["metrics-run", "demo", "B", "skill", "3", "17", "8", "9", "9"]
     assert float(row[9]) == 3.75
     assert row[10:] == ["1"]
+
+
+def test_abc_summary_aggregates_grouped_runs_and_anonymizes_identifiers(tmp_path):
+    def make_run(name, case, condition, wall_time, messages, *, metric=None, bucket=None,
+                 artifacts=(), cleaning=None, assumptions=None):
+        run = tmp_path / name
+        run.mkdir()
+        (run / "meta.json").write_text(json.dumps({
+            "case": case, "case_dir": f"fixture/{case}", "flow": "B",
+            "condition": condition, "wall_time_s": wall_time, "turns": len(messages),
+        }))
+        write_jsonl(run / "transcript.jsonl", [
+            {"speaker": "user", "text": "Can you check 12345.6?"},
+            *({"turn": turn, "speaker": "analyst", "text": message}
+              for turn, message in enumerate(messages, 1)),
+        ])
+        if bucket:
+            numeric = {key: [] for key in ("matched", "mismatched", "missing", "unparsed", "unverified", "extra")}
+            numeric[bucket].append({"required": True, "actual": {"value": metric}})
+            (run / "numeric_check.json").write_text(json.dumps(numeric))
+        for artifact in artifacts:
+            path = run / artifact
+            path.parent.mkdir(exist_ok=True)
+            path.write_text("{}")
+        if cleaning:
+            (run / "cleaning_check.json").write_text(json.dumps({"status": cleaning}))
+        if assumptions is not None:
+            (run / "grade.json").write_text(json.dumps({
+                "numbers_verdict": "pass", "unsupported_assumptions": assumptions,
+            }))
+        return run
+
+    complete = make_run(
+        "reused-control-first", "Synthetic case alpha", "noskill", 2.5,
+        ["Is 912345.6 in scope? I will wait.", "Candidate total is 12,345.60."],
+        metric=12345.6, bucket="matched",
+        artifacts=("delivery/report.html", "delivery/results.json"), cleaning="pass", assumptions=2,
+    )
+    write_jsonl(complete / "raw/01-analyst.jsonl", [
+        command_event("python3 -I fixture.py"), usage_event(10, 6, 4),
+    ])
+    write_jsonl(complete / "raw/01-simulator.jsonl", [usage_event(900, 0, 5)])
+    make_run(
+        "reused-control-second", "Synthetic case alpha", "noskill", 1.5,
+        ["Which interval?" + " " + "x" * 400],
+        bucket="unverified", artifacts=("report.html",), cleaning="incomplete", assumptions=3,
+    )
+    make_run(
+        "reused-prompted", "Synthetic case alpha", "prompted", 3,
+        ["The candidate values include 87 and 246."],
+        metric=[87, 246], bucket="mismatched",
+        artifacts=("report.html", "eda_summary.json"), cleaning="review", assumptions=0,
+    )
+    make_run(
+        "fresh-skill", "Synthetic case beta", "skill", 1,
+        ["One source column was empty."], metric=55, bucket="matched",
+        artifacts=("delivery/results.json",), cleaning="not_applicable",
+    )
+    out = tmp_path / "abc.md"
+
+    result = subprocess.run(
+        [sys.executable, "-I", str(ROOT / "evals/ab_summary.py"),
+         "--runs", str(tmp_path / "reused-"), str(tmp_path / "fresh-*"),
+         "--group", "reused=reused-*", "--group", "fresh=fresh-*",
+         "--anonymize", "--out", str(out)],
+        check=False, capture_output=True, text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    report = out.read_text(encoding="utf-8")
+    for raw_label in ("reused-control", "reused-prompted", "fresh-skill", "Synthetic case", str(tmp_path)):
+        assert raw_label not in report
+    assert "| R01 | case-1 | B | noskill |" in report
+    assert "| R03 | case-1 | B | prompted |" in report
+    assert "| R04 | case-2 | B | skill |" in report
+
+    def table(section, key):
+        headers, _, *rows = [
+            line.strip("| ").split(" | ")
+            for line in report.split(f"## {section}\n", 1)[1].split("\n## ", 1)[0].splitlines()
+            if line.startswith("|")
+        ]
+        return {row[0]: dict(zip(headers, row))[key] for row in rows}
+
+    assert table("reused", "Numeric pass / review / fail") == {"noskill": "1 / 1 / 0", "prompted": "0 / 0 / 1"}
+    assert table("reused", "Complete") == {"noskill": "1/2 (50.0%)", "prompted": "1/1 (100.0%)"}
+    assert table("reused", "Analyst turns") == {"noskill": "3", "prompted": "1"}
+    assert table("reused", "Question turns") == {"noskill": "1", "prompted": "0"}
+    assert table("reused", "Wall time (s)") == {"noskill": "4", "prompted": "3"}
+    assert table("reused", "Uncached input + output tokens") == {"noskill": "8", "prompted": "0"}
+    assert table("reused", "Commands") == {"noskill": "1", "prompted": "0"}
+    assert table("reused", "Cleaning status") == {"noskill": "pass 1, incomplete 1", "prompted": "review 1"}
+    assert table("reused", "Unsupported assumptions") == {"noskill": "5", "prompted": "0"}
+    assert table("fresh", "Complete") == {"skill": "0/1 (0.0%)"}
+    assert table("fresh", "Unsupported assumptions") == {"skill": "—"}
+    assert table("Run outcomes", "First result turn") == {"R01": "2", "R02": "—", "R03": "1", "R04": "—"}
+    assert "last 400 characters" in report
 
 
 def check_run_paths(run):
@@ -2698,7 +2836,7 @@ def test_unrelated_unit_does_not_block_exact_delivery_evidence(tmp_path):
                  "skill", "missing", "eda_summary.json", id="definitions-are-not-results"),
     pytest.param(None, {"metrics": [{"name": "mean delay", "value": 7, "unit": "s",
                                     "numerator": 21, "denominator": 3}]},
-                 "noskill", "missing", "eda_summary.json", id="control-run-unchanged"),
+                 "noskill", "matched", "results.json", id="control-run-delivery"),
 ])
 def test_cs7b_results_json_fallback(tmp_path, summary_value, results_content, condition, bucket, source):
     check_run = eval_function("numeric_check.py", "check_run")
@@ -2722,6 +2860,29 @@ def test_cs7b_results_json_fallback(tmp_path, summary_value, results_content, co
     assert entry.get("source", result["source"]) == source, result
     if source == "results.json":
         assert entry["source_path"] == "delivery/results.json"
+
+
+def test_numeric_check_uses_identical_artifacts_across_conditions(tmp_path):
+    check_run = eval_function("numeric_check.py", "check_run")
+    summary_path = eval_function("numeric_check.py", "summary_path")
+    report_path = eval_function("numeric_check.py", "report_path")
+    required = {"name": "mean delay", "value": 7, "unit": "s", "numerator": 21, "denominator": 3}
+    expected = {"absolute_tolerance": 0, "flows": {"A": {"metrics": [required]}}}
+    delivery = tmp_path / "delivery"
+    delivery.mkdir()
+    (delivery / "results.json").write_text(json.dumps({"metrics": [required]}))
+    (delivery / "report.html").write_text("<h1>Delay report</h1>")
+    write_transcript(tmp_path, ("analyst", "The report is ready."))
+
+    results = []
+    for condition in ("noskill", "prompted", "skill"):
+        (tmp_path / "meta.json").write_text(json.dumps({"condition": condition}))
+        summary = summary_path(tmp_path)
+        results.append(check_run(tmp_path, "A", expected, summary, report_path(tmp_path, summary)))
+
+    assert results[0] == results[1] == results[2]
+    assert results[0]["source"] == "results.json"
+    assert results[0]["matched"][0]["actual"]["value"] == 7
 
 
 @pytest.mark.parametrize(("kind", "bucket", "source"), [

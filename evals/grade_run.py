@@ -184,6 +184,10 @@ def parse_grade(text):
         raise ValueError("Expected critical_failures, quality_scores with integer scores 0–2, "
                          "evidence, and pass/fail/review numbers_verdict and overall")
     result = {key: grade[key] for key in fields}
+    count = grade.get("unsupported_assumptions")
+    if count is not None and (type(count) is not int or count < 0):
+        raise ValueError("unsupported_assumptions must be a nonnegative integer or null")
+    result["unsupported_assumptions"] = count
     json.dumps(result, allow_nan=False)
     return result
 
@@ -193,10 +197,12 @@ def grade_markdown(grade):
         return "\n".join(f"- {value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)}"
                          for value in items) or "None recorded."
 
+    assumptions = grade.get("unsupported_assumptions")
     lines = [
         "# EDA evaluation",
         f"**Overall** {grade['overall']}",
         f"**Numbers verdict** {grade['numbers_verdict']}",
+        f"**Unsupported assumptions** {'—' if assumptions is None else assumptions}",
     ]
     if reasons := grade.get("review_reasons"):
         lines.extend(["## Review reasons", bullets(f"{item['name']} ({item['bucket']})" for item in reasons)])
@@ -215,12 +221,13 @@ def numeric_verdict(numeric, critical_failures):
     if (critical_failures or numeric.get("summary_error") or numeric["missing"]
             or any(item["required"] for item in numeric["mismatched"])):
         return "fail", []
-    reasons = [{"name": item["name"], "bucket": bucket}
+    reasons = [{"name": item.get("name"), "bucket": bucket}
                for bucket in ("unparsed", "unverified") for item in numeric[bucket] if item["required"]]
     return ("review" if reasons else "pass"), reasons
 
 
 def save_grade(run, grade, leak_check, foreign_skill_check):
+    grade.setdefault("unsupported_assumptions", None)
     grade["leak_check"] = leak_check
     grade["foreign_skill_check"] = foreign_skill_check
     (run / "grade.json").write_text(json_text(grade) + "\n", encoding="utf-8")
@@ -290,7 +297,7 @@ def grade_run(run, dry_run, *, remap=False, mapper_call=None):
                                    if summary else "(No summary supplied.)"),
         f"## Report HTML text (up to {HTML_TEXT_LIMIT} characters)\n{reports_text(run, report)}",
         "Start with a JSON object containing critical_failures, quality_scores, evidence, "
-        "numbers_verdict and overall.",
+        "numbers_verdict, overall, and unsupported_assumptions.",
     ])
     raw = run / "raw"
     raw.mkdir(mode=0o700, exist_ok=True)
@@ -309,7 +316,8 @@ def grade_run(run, dry_run, *, remap=False, mapper_call=None):
                 prompt += (
                     "\n\nReturn a valid JSON object as your entire response. Include "
                     "critical_failures (array), quality_scores (object of integer scores 0–2), "
-                    "evidence (array), numbers_verdict and overall (both strings, pass, fail, or review)."
+                    "evidence (array), numbers_verdict and overall (both strings, pass, fail, or review), "
+                    "and unsupported_assumptions (nonnegative integer)."
                 )
     if path_check["status"] == "found":
         grade["critical_failures"].append("Absolute home path in chat or deliverable. See path_check.json.")
