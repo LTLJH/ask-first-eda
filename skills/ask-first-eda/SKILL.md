@@ -24,8 +24,9 @@ If `eda-work*/delivery/eda_summary.json` exists near the current directory or th
 
 - Compare each table with `datasets[].structure` in each candidate summary. Match the confirmed header row, column names in order and record path. Use file and sheet names only to rank candidates.
 - Skip reuse if the summary is unreadable, lacks structure or differs on any table. Offer any available earlier answers only as candidates.
-- Reuse only `resolved` or `user_assumed` answers and approved cleaning rules. Check referenced columns and units in code against the new raw input. Apply a shared rule within its confirmed scope. If a new value, code or unit falls outside that scope, use Step 2 for open definitions such as recorded zero or denominator eligibility.
+- Reuse only `resolved` or `user_assumed` answers and approved cleaning rules. Check referenced columns and units in code against the new raw input. Apply a shared rule within its confirmed scope. Use code to list new values, codes, categories, units and rows outside that scope, including new row types.
 - Show the eligible definitions and rules in a table by summary. Identify assumptions the file cannot verify, such as what a unit represents. Use the first question to let the user confirm a match, choose among multiple matches or select “start fresh”.
+- Confirming reuse settles only the selected items. When possible, preview items that could change a requested value alongside the reuse question. Before delivery, ask about those items one question at a time under Step 2, including any open choices about recorded zero or denominator eligibility. Log the other new items without asking.
 - For each reused item, record the relative path to its summary as the source in the Ambiguity Log. Keep the previous directory read-only.
 - Never run the previous `clean.py`. Read it only for reference. Write fresh cleaning code for this input in the new `$WORK` and require a passing `audit_clean.py` check as in Step 3.
 

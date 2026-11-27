@@ -622,6 +622,37 @@ def test_reuse_applies_shared_rules_to_new_values(skill_doc):
         assert term in section.casefold()
 
 
+def test_reuse_requires_asking_about_new_items_before_delivery(skill_doc):
+    _, section = skill_section(skill_doc, "Reuse a previous analysis")
+    sentences = markdown_sentences(section)
+    original_words = 232
+    word_count = len(section.split())
+    assert word_count <= original_words + 60, (
+        f"Reuse section has {word_count} words, exceeding the limit of {original_words + 60}"
+    )
+
+    requirements = (
+        (
+            (r"\breuse", r"\bonly\b", r"\b(?:settle|cover|appl)"),
+            "Explain that confirming reuse settles only the reused items.",
+        ),
+        (
+            (r"\b(?:new|unseen)\b", r"\b(?:categor|code|value|row)", r"\b(?:list|find|check)"),
+            "Require using code to identify and list new items outside the previous scope.",
+        ),
+        (
+            (r"\bask", r"\bbefore\b", r"\b(?:deliver|report|final)"),
+            "Require asking about new items that change requested results before delivery.",
+        ),
+    )
+    missing = [
+        message
+        for patterns, message in requirements
+        if not any(all(re.search(pattern, sentence, re.I) for pattern in patterns) for sentence in sentences)
+    ]
+    assert not missing, "\n".join(missing)
+
+
 def test_methods_documents_same_population_for_numerator_and_denominator():
     methods = (SKILL_DIR / "references" / "methods.md").read_text(encoding="utf-8")
     _, section = skill_section(methods, "Summaries and requested metrics")
