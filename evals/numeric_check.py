@@ -381,7 +381,7 @@ def scope_matches(reference, metric, date, actual_date, *, allow_undated=False, 
     texts = [metric[field] for field in METRIC_TEXT_FIELDS
              if isinstance(metric.get(field), str)]
     for key, value in reference.items():
-        if (key in SCOPE_EXCLUSIONS or mapped_evidence and key == "definition"
+        if (key in SCOPE_EXCLUSIONS or mapped_evidence and key in ("definition", "formula")
                 or key.startswith(("numerator_", "numerators_", "denominator_", "denominators_"))):
             continue
         if type(value) in (int, float, bool) and key not in METRIC_DATE_FIELDS:
@@ -430,6 +430,12 @@ def comparable_fields(metric):
     elif "conditional" in metric:
         fields["conditional"] = metric["conditional"]
     return fields
+
+
+def structured_nonfinal(metric):
+    status = metric.get("status")
+    return (metric.get("conditional") is True or bool(comparable_fields(metric).get("conditional"))
+            or isinstance(status, str) and status.strip().casefold() in ("pending", "conditional"))
 
 
 def is_aggregate(metric):
@@ -1059,6 +1065,7 @@ def conflicting_delivery_rows(reference, rows, delivery_rows, tolerance, *, allo
         for other_index, other, observed, other_period, other_name in delivery_rows:
             if (other_index == index or name != other_name or period != other_period
                     or metric.get("condition") != other.get("condition")
+                    or mapped_evidence and bool(fields.get("conditional")) != bool(observed.get("conditional"))
                     or not scope_matches(reference, other, metric_date(reference)[1], other_period,
                                          allow_undated=allow_undated, mapped_evidence=mapped_evidence)):
                 continue
@@ -1100,7 +1107,9 @@ def compare_metrics(required, optional, actual, tolerance, dates, *, named_evide
     available = {i: evidence_row(i, metric) for i, metric in enumerate(actual)}
     text_rows = tuple(available.values()) if named_evidence else ()
     delivery_source = evidence_source == "results.json"
-    delivery_rows = tuple(available.values()) if (delivery_source or mapped_evidence) and not named_evidence else ()
+    delivery_rows = tuple(row for row in available.values() if row[1].get("_mapped_kind") != "html") if (
+        (delivery_source or mapped_evidence) and not named_evidence
+    ) else ()
     references = required + optional
     entries = []
     periods = []
@@ -1133,6 +1142,9 @@ def compare_metrics(required, optional, actual, tolerance, dates, *, named_evide
             entry["source"] = evidence_source
             if delivery_source:
                 entry["source_path"] = "delivery/results.json"
+        mapped_report = mapped_evidence and rows[0][1].get("_mapped_kind") == "html"
+        if mapped_evidence and (file := rows[0][1].get("_mapped_file")):
+            entry["source_path"] = file
         expected_unit = reference.get("unit")
         name = metric_name(reference)
         methods = []
@@ -1175,14 +1187,17 @@ def compare_metrics(required, optional, actual, tolerance, dates, *, named_evide
                 conflict = ("results_conflict" if delivery_source else "report_conflict"
                             if report_source is not None else "transcript_conflict")
                 differences[conflict] = {"claims": claims}
-        if delivery_rows and not differences:
+        if delivery_rows and not mapped_report and (not differences or mapped_evidence):
             if claims := conflicting_delivery_rows(reference, rows, delivery_rows, tolerance,
                                                    allow_undated=allow_undated, mapped_evidence=mapped_evidence):
                 differences["results_conflict"] = {"claims": claims}
-        if report_rows and not differences:
-            if claims := conflicting_text_claims(reference, displayed_value_rows(rows, dates), report_rows,
+        check_report = delivery_rows + tuple(row for row in report_rows if row[1].get("_mapped_kind") == "html") if (
+            mapped_report
+        ) else report_rows
+        if check_report and (not differences or mapped_evidence):
+            if claims := conflicting_text_claims(reference, displayed_value_rows(rows, dates), check_report,
                                                  tolerance, allow_undated=allow_undated, against_summary=True,
-                                                 mapped_evidence=mapped_evidence):
+                                                 report_display=mapped_report, mapped_evidence=mapped_evidence):
                 entry.update(reason="report_conflict", source="report_html", source_path=report_file)
                 differences["report_conflict"] = {"claims": claims}
         if differences:
@@ -1308,7 +1323,7 @@ def compare_metrics(required, optional, actual, tolerance, dates, *, named_evide
     return results
 
 
-def check_run(run, flow, expected, summary, report):
+def check_run(run, flow, expected, summary, report, *, write_output=True):
     definition = expected["flows"][flow]
     tolerance = expected["absolute_tolerance"]
     if type(tolerance) not in (float, int):
@@ -1383,7 +1398,8 @@ def check_run(run, flow, expected, summary, report):
     }
     if summary_error:
         result["summary_error"] = summary_error
-    (run / "numeric_check.json").write_text(json_text(result) + "\n", encoding="utf-8")
+    if write_output:
+        (run / "numeric_check.json").write_text(json_text(result) + "\n", encoding="utf-8")
     return result
 
 
