@@ -1071,6 +1071,76 @@ def test_skill_references_list_links_cleaning_guide(skill_doc):
     )
 
 
+def test_data_qa_skill_body_word_budget(skill_doc):
+    original_words = 3086
+    frontmatter = re.match(r"\A---\n.*?\n---[ \t]*(?:\n|$)", skill_doc, re.S)
+    assert frontmatter, "SKILL.md must start with frontmatter"
+    word_count = len(skill_doc[frontmatter.end() :].split())
+    assert word_count <= original_words + 60, (
+        f"SKILL.md body has {word_count} words, exceeding the limit of {original_words + 60}"
+    )
+
+
+def test_data_qa_skill_mentions_quality_tools(skill_doc):
+    patterns = {
+        "check_join.py": r"(?<![\w.-])check_join\.py(?![\w-]|\.\w)",
+        "--reconcile": r"(?<![\w-])--reconcile\b(?!-)",
+        "missing_patterns": r"\bmissing_patterns\b",
+    }
+    missing = [name for name, pattern in patterns.items() if not re.search(pattern, skill_doc)]
+    assert not missing, f"Missing from SKILL.md: {', '.join(missing)}"
+
+
+def test_data_qa_skill_references_list_has_conditional_link(skill_doc):
+    _, section = skill_section(skill_doc, "References")
+    entry = re.search(r"^[ \t]*[-+*][ \t]+\[Data QA\]\(references/data_qa\.md\)([^\n]*)", section, re.M)
+    assert entry, "The References list must link to [Data QA](references/data_qa.md)"
+    conditions = (r"\b(?:join|stack)\w*\b", r"\bmissing\w*\b", r"\bcleaned[ \t]+cop(?:y|ies)\b")
+    assert sum(bool(re.search(pattern, entry[1], re.I)) for pattern in conditions) >= 2, (
+        "The Data QA entry must mention at least two conditions: join or stack, missing, or cleaned copy"
+    )
+
+
+def test_data_qa_reference_documents_quality_guidance():
+    path = SKILL_DIR / "references" / "data_qa.md"
+    assert path.is_file(), "references/data_qa.md is missing"
+    reference = path.read_text(encoding="utf-8")
+    word_count = len(reference.split())
+    assert word_count <= 800, f"data_qa.md has {word_count} words, exceeding the limit of 800"
+
+    sentences = markdown_sentences(reference)
+    guidance = {
+        "mention MCAR and MNAR without automatic classification": (
+            r"\bMCAR\b", r"\bMNAR\b", r"\b(?:not|never)\b.*?\b(?:classif|label|test)",
+        ),
+        "avoid default imputation": (r"\b(?:imput|fill)", r"\b(?:not|never|only)\b"),
+        "compare results by treatment": (
+            r"\b(?:each|both)\b", r"\b(?:treatment|option|rule)", r"\b(?:value|result)",
+        ),
+        "flag and retain outliers": (
+            r"\boutlier", r"\b(?:flag|mark|highlight|show)", r"\b(?:retain|preserv|keep)",
+        ),
+        "require confirmation before excluding outliers": (r"\boutlier", r"\b(?:confirm|approv|ask)"),
+    }
+    for instruction, patterns in guidance.items():
+        assert any(
+            all(re.search(pattern, sentence, re.I | re.S) for pattern in patterns)
+            for sentence in sentences
+        ), f"data_qa.md must {instruction}"
+
+    command = r"(?:^[ \t]*|`+)[ \t]*python(?:3(?:\.\d+)?)?[ \t]+[^`\n]*?"
+    for example in (r"\bcheck_join\.py\b", r"\baudit_clean\.py\b[^`\n]*?[ \t]--reconcile\b(?!-)"):
+        assert re.search(command + example, reference, re.I | re.M), (
+            f"data_qa.md must show a one-line command matching {example}"
+        )
+
+    significance_terms = r"\bp[-‑ ]values?\b|p값|\bhypothesis\s+tests?\b"
+    negation = r"\b(?:(?:do|must|should)\s+not|never|avoid)\b|\bdon['’]t\b"
+    for sentence in sentences:
+        if re.search(significance_terms, sentence, re.I):
+            assert re.search(negation, sentence, re.I), f"Expected prohibition in: {sentence.strip()}"
+
+
 def test_requirements_do_not_prohibit_automatic_repairs():
     requirements = REQUIREMENTS.read_text(encoding="utf-8")
     assert not re.search(r"\bautomatic\s+repairs\s+are\s+prohibited\b", requirements, re.I), (

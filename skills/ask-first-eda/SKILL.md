@@ -100,6 +100,7 @@ Pass the same source selection and reading options confirmed during inspection t
 When inspection reports an uncertain header, pass `--header yes` or `--header no` for delimited text, or `--header-row` for Excel (use `0` when there is no header).
 For Excel, append `--sheets` with the confirmed sheet names as a comma-separated list, or omit it to audit every sheet in the workbook.
 Use `--passthrough CLEANED_COL=SOURCE_COL` for each numeric column copied one-to-one, leaving unit-converted columns out of the mappings.
+Use `--reconcile CLEANED=SOURCE@GROUP` to compare same-unit sums by source group.
 Add `--expand` when an intentional reshape produces multiple cleaned rows from one source row.
 Before delivery, check the cleaned CSV for unparsed numeric text and total or subtotal rows, unless the user confirmed keeping them.
 Proceed with the cleaned CSV only after the audit returns `pass`. Deliver it with a copy of the executed script at `$WORK/delivery/clean.py`.
@@ -109,7 +110,7 @@ Proceed with the cleaned CSV only after the audit returns `pass`. Deliver it wit
 When you produce a cleaned CSV, analyze only that file after it passes the audit. Recheck the data after cleaning or when the scope changes. Reuse earlier checks only for the same data and scope. Preserve source coordinates in derived tables.
 Always perform the quality stage. Use stages 2–4 when they answer the request and the data support them. See the [method selection criteria](references/methods.md).
 
-1. **Quality.** Count missing cells and affected rows, parsing failures, duplicate rows and keys, mixed units and unusual values. Flag outliers and retain them. Before a join, measure both inputs, missing and unmatched keys and expected multiplicity. Compare the output row count and control totals with expectations. Stop dependent calculations if multiplication is unexplained.
+1. **Quality.** Count missing cells and affected rows, parsing failures, duplicate rows and keys, mixed units and unusual values. When missing values are in scope, inspect the profile’s `missing_patterns`. Flag outliers and retain them. Before a join, use `check_join.py` to measure both inputs, missing and unmatched keys and expected multiplicity. Compare the output row count and control totals with expectations. Stop dependent calculations if multiplication is unexplained.
 2. **Single variables.** Describe valid counts, distribution and spread. Show frequencies and the denominator for categories. Keep missing categories visible.
 3. **Relationships and time.** Choose a chart only for a stated question. Record the plotted n and excluded rows (even zero), exclusion reasons, paired or group n where relevant, axes and units. Identify missing time intervals and changes in group proportions that could explain an aggregate difference.
 4. **Domain metrics.** Specify definition, numerical numerator and denominator, unit, eligible population, condition and source rows for every rate, using the same eligible rows for both components and their source references. Record the same fields for other metrics, with null and an explanation for inapplicable components. For a pooled rate, divide the sum of numerators by the sum of eligible denominators. An equal-weight mean of group rates answers a different question. Apply the Step 1 rule when the requested weighting is open. Verify numbers in code before quoting them.
@@ -177,6 +178,7 @@ Each row records one batch. Lines 2–6 give the shift ID and packed mass in kg:
 - [Input formats](references/input-formats.md) — read at inspection or when a parse warning affects coverage.
 - [Interview](references/interview.md) — use to select the next question and maintain the log.
 - [Cleaning](references/cleaning.md) — use to draft the cleaning plan and its confirmation questions.
+- [Data QA](references/data_qa.md) — read before joining or stacking tables, when missing values could change a requested result, or when producing a cleaned copy.
 - [Methods](references/methods.md) — use before choosing a statistic, join, chart or domain metric.
 - [Report](references/report.md) — use to assemble chart entries, evidence and the delivery.
 - [Report spec example](references/report_spec.example.json) — consult for builder input field names and nesting.
