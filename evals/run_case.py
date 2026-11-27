@@ -23,6 +23,11 @@ SIMULATOR_MODEL = "gpt-6.2-sol"
 ANALYST_EFFORT = "medium"
 SIMULATOR_EFFORT = "low"
 LIFETIME_LOCK_MARKER = ".lifetime-lock"
+SKILLS_ISOLATION = {"bundled_skills": False, "plugins": False, "apps": False}
+ROLE_HOME_CONFIG = (
+    "[skills.bundled]\nenabled = false\n\n"
+    "[features]\nplugins = false\napps = false\n"
+)
 DELIVERY_DIR = re.compile(r"delivery(?:-([0-9]+))?")
 ARTIFACT_SUFFIXES = {
     ".html", ".htm", ".png", ".py", ".r", ".sh", ".sql", ".ipynb", ".jl", ".js",
@@ -251,7 +256,9 @@ def make_role_home(base, role):
 
     config = codex_home / "config.toml"
     config.unlink(missing_ok=True)
-    config.touch(mode=0o600, exist_ok=False)
+    fd = os.open(config, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as stream:
+        stream.write(ROLE_HOME_CONFIG)
 
     auth = codex_home / "auth.json"
     auth.unlink(missing_ok=True)
@@ -522,6 +529,7 @@ def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None
         "opening_style": opening_style,
         "input_sha256": input_fingerprints(staged_inputs),
         "skill_sha256": skill_fingerprint(staged_skill) if condition == "skill" else None,
+        "skills_isolation": SKILLS_ISOLATION,
         **reproducibility,
         "models": {"analyst": analyst_model, "simulator": SIMULATOR_MODEL},
         "efforts": {"analyst": analyst_effort, "simulator": SIMULATOR_EFFORT},

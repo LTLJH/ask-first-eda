@@ -353,7 +353,7 @@ class EvalToolsTests(unittest.TestCase):
             for name in ("skills", "plugins", "AGENTS.md"):
                 self.assertFalse((directory / name).exists(), directory / name)
         config = (codex_home / "config.toml").read_text(encoding="utf-8").strip().splitlines()
-        self.assertTrue(not config or (len(config) == 1 and config[0].startswith("#")), config)
+        self.assertEqual(config, ["[skills.bundled]", "enabled = false", "", "[features]", "plugins = false", "apps = false"])
         self.assertEqual(call["auth_mode"], 0o600)
         self.assertFalse((codex_home / "auth.json").exists())
 
@@ -562,6 +562,15 @@ class EvalToolsTests(unittest.TestCase):
             "input.csv": sha256((self.case / "input.csv").read_bytes()).hexdigest(),
         })
         self.assertIs(meta.get("input_modified", False), False)
+
+    def test_runner_records_skills_isolation(self):
+        self.run_case("skill", "--max-turns", "1")
+
+        meta = json.loads((self.run_dir("skill") / "meta.json").read_text(encoding="utf-8"))
+        isolation = meta.get("skills_isolation", {})
+        self.assertEqual(set(isolation), {"bundled_skills", "plugins", "apps"})
+        for key in isolation:
+            self.assertIs(isolation[key], False, key)
 
     def test_runner_flags_input_copy_with_changed_sha256(self):
         original = (self.case / "input.csv").read_bytes()
@@ -2431,6 +2440,21 @@ def test_make_role_home_rejects_base_inside_repo(tmp_path, monkeypatch):
         make_role_home(base, "analyst")
 
     assert not base.exists()
+
+
+def test_make_role_home_disables_extra_skills(tmp_path, monkeypatch):
+    make_role_home = eval_function("run_case.py", "make_role_home")
+    monkeypatch.setenv("HOME", str(tmp_path / "source-home"))
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "source-codex"))
+    base = tmp_path / "cache"
+    base.mkdir()
+
+    env = make_role_home(base, "analyst")
+
+    config = Path(env["CODEX_HOME"]) / "config.toml"
+    assert config.read_text(encoding="utf-8").strip() == (
+        "[skills.bundled]\nenabled = false\n\n[features]\nplugins = false\napps = false"
+    )
 
 
 @pytest.mark.parametrize("auth_source", ["configured", "fallback", "missing"])
