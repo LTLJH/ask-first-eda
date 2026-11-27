@@ -90,17 +90,27 @@ The skill preserves the source file. Its scope excludes model training, model tu
 
 ## Evaluation
 
-An independent review compared 36 runs across six synthetic cases.
+The same analyst model ran six synthetic cases twice under each condition. An independent review scored the 36 runs.
 
-| Condition | Correct numeric results |
-| --- | ---: |
-| A. No skill | 18/24 |
-| B. One-line instruction | 24/24 |
-| C. Ask First EDA | 24/24 |
+| Measure | No skill | One-line instruction | Ask First EDA |
+| --- | ---: | ---: | ---: |
+| Correct numeric results | 18/24 | 24/24 | 24/24 |
+| Final values with a confirmed definition | 14/24 | 18/24 | 18/24 |
+| Runs where the analyst assumed a definition without evidence | 6/12 | 2/12 | 0/12 |
 
-In conditions B and C, the evidence supported both the value and its definition for 18 of 24 results in each condition. No condition asked the required question about the denominator. In condition C, the assistant made no unsupported claims about metric definitions and exposed no home directory paths. Condition C used about twice the median analyst time and token count of condition B.
+In one case, the analyst needed to ask which records to count. No condition asked that question in either run. The one-line instruction and the skill both produced values for each possible definition.
 
-[Evaluation results and grading corrections](evals/abc_summary.md) · [Earlier evaluation](evals/ab_summary.md)
+Compared with the one-line instruction, the skill took 1.76 times as long and used 2.00 times as many tokens. Both ratios compare medians per analyst run.
+
+[Full results, including delivery checks and grading corrections](evals/abc_summary.md) · [Earlier evaluation](evals/ab_summary.md)
+
+### Next evaluation
+
+We plan to test the one-line instruction and the skill on the same production log. We will score three behaviors separately.
+
+- **“How many units did the line produce per hour?”** Does the analyst ask whether to include hours when the line stopped?
+- **“How many units did the line produce per operating hour?”** Does the analyst calculate the correct value without asking which hours to count?
+- **“I’ll decide later.”** If the user defers the choice, does the report show both values and label which hours each value includes?
 
 ### Installation checks
 

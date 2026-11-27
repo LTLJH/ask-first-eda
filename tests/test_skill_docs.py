@@ -93,12 +93,16 @@ def test_readme_evaluation_links_current_and_earlier_results(evaluation):
 
 
 def test_readme_evaluation_reports_scores_missed_question_and_cost(evaluation):
-    assert "18/24" in evaluation and "24/24" in evaluation
-    assert re.search(r"denominator|분모", evaluation, re.I)
-    assert re.search(r"none asked|no condition asked|묻지 않|질문하지 않", evaluation, re.I)
+    rows = [line.split("|")[2:-1] for line in evaluation.splitlines() if line.startswith("|")]
+    assert [[cell.strip() for cell in row] for row in rows[2:]] == [
+        ["18/24", "24/24", "24/24"],
+        ["14/24", "18/24", "18/24"],
+        ["6/12", "2/12", "0/12"],
+    ]
+    assert re.search(r"no condition asked|질문을 놓쳤", evaluation, re.I)
     assert re.search(r"time|시간", evaluation, re.I)
     assert re.search(r"tokens?|토큰", evaluation, re.I)
-    assert re.search(r"twice|2배|두 배", evaluation, re.I)
+    assert "1.76" in evaluation and "2.00" in evaluation
 
 
 def test_abc_summary_distinguishes_correct_numbers_from_confirmed_values():
