@@ -2844,6 +2844,57 @@ def test_runner_rejects_invalid_prior_before_creating_folders(
     assert not (tmp_path / "home/.cache").exists()
 
 
+@pytest.fixture
+def prior_summary_reader(tmp_path, monkeypatch):
+    read_prior_summary = runpy.run_path(str(ROOT / "evals/run_case.py"))["read_prior_summary"]
+    monkeypatch.setitem(read_prior_summary.__globals__, "ROOT", tmp_path)
+    return read_prior_summary
+
+
+def test_read_prior_summary_accepts_private_summary(prior_summary_reader, tmp_path):
+    relative = Path("_private/x/prior.summary.json")
+    source = tmp_path / relative
+    source.parent.mkdir(parents=True)
+    content = b'{"datasets": [], "ambiguity_log": []}'
+    source.write_bytes(content)
+
+    assert prior_summary_reader(source) == (relative, content)
+
+
+def test_read_prior_summary_rejects_private_file_with_wrong_suffix(prior_summary_reader, tmp_path):
+    source = tmp_path / "_private/x/prior.json"
+    source.parent.mkdir(parents=True)
+    source.write_text('{"datasets": [], "ambiguity_log": []}', encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        prior_summary_reader(source)
+
+
+def test_read_prior_summary_rejects_private_symlink_path(prior_summary_reader, tmp_path):
+    target = tmp_path / "_private/x/prior.summary.json"
+    target.parent.mkdir(parents=True)
+    target.write_text('{"datasets": [], "ambiguity_log": []}', encoding="utf-8")
+    linked_directory = tmp_path / "_private/linked-directory"
+    linked_directory.symlink_to(target.parent, target_is_directory=True)
+
+    with pytest.raises(ValueError):
+        prior_summary_reader(linked_directory / target.name)
+
+
+@pytest.mark.parametrize("directory", ["docs", "evals"])
+def test_read_prior_summary_rejects_other_locations(prior_summary_reader, tmp_path, directory):
+    source = tmp_path / directory / "prior.summary.json"
+    source.parent.mkdir()
+    source.write_text('{"datasets": [], "ambiguity_log": []}', encoding="utf-8")
+
+    with pytest.raises(ValueError) as error:
+        prior_summary_reader(source)
+
+    message = str(error.value)
+    assert "docs/gallery" in message
+    assert "_private" in message
+
+
 @pytest.mark.parametrize(("reference_changes", "actual_changes"), [
     pytest.param({}, {"numerator": 16}, id="wrong-numerator"),
     pytest.param({}, {"denominator": 2}, id="real-denominator"),

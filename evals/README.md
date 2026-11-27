@@ -22,7 +22,7 @@ Each case tests a different decision or data structure. Runs with different inte
 - `--analyst-model` and `--analyst-effort` override `gpt-6.2-sol` and `medium`, respectively.
 - `--dry-run` shows the selected style, analyst model, and effort. Actual runs record them in `meta.json`.
 
-Use `--prior-summary PATH` to stage a `.summary.json` file from `docs/gallery` at `eda-work/delivery/eda_summary.json` inside `work/`.
+Use `--prior-summary PATH` to stage a `.summary.json` file from `docs/gallery` or `_private` at `eda-work/delivery/eda_summary.json` inside `work/`.
 
 List input filenames in an `inputs: a.csv, b.xlsx` line above the first flow heading in `case.md`. Without that line, the runner stages only regular files matching `input.*`. Symlinks are rejected.
 For reproducibility, `meta.json` records input SHA-256 fingerprints, the Git commit and dirty status, the staged skill hash when used, grader file hashes, and Python and package versions.

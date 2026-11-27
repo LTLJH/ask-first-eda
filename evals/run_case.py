@@ -161,9 +161,10 @@ def dependency_versions():
 
 def read_prior_summary(value):
     source = ROOT / Path(value)
-    if (not source.is_relative_to(ROOT / "docs" / "gallery")
+    allowed_roots = (ROOT / "docs" / "gallery", ROOT / "_private")
+    if (not any(source.is_relative_to(root) for root in allowed_roots)
             or ".." in source.parts or not source.name.endswith(".summary.json")):
-        raise ValueError("--prior-summary must be a .summary.json file under docs/gallery")
+        raise ValueError("--prior-summary must be a .summary.json file under docs/gallery or _private")
 
     def reject_constant(constant):
         raise ValueError(f"invalid JSON constant: {constant}")
@@ -710,7 +711,9 @@ def main():
     parser.add_argument("--analyst-effort", default=ANALYST_EFFORT)
     parser.add_argument("--max-turns", type=int, default=10, help="Maximum analyst turns")
     parser.add_argument("--run-id")
-    parser.add_argument("--prior-summary", type=Path, help="Stage a .summary.json file from docs/gallery")
+    parser.add_argument(
+        "--prior-summary", type=Path, help="Stage a .summary.json file from docs/gallery or _private",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     if args.max_turns < 1:
