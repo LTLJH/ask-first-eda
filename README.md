@@ -1,6 +1,6 @@
 # Ask First EDA
 
-When a metric’s definition affects the result, Ask First EDA asks which definition to use. It then uses your answer to calculate the metric and creates a report with charts.
+When a metric’s definition affects the result, Ask First EDA asks which definition to use. The skill calculates the metric with your answer and creates a report with charts.
 
 [Korean](README.ko.md)
 
@@ -14,13 +14,17 @@ flowchart LR
 <details>
 <summary>How the assistant reviews the data and calculates metrics</summary>
 
-Python inspects the file. The assistant uses your question and the file to identify which records count toward each metric.
+The skill uses Python to inspect the file. The skill uses your question and the file to identify which records count toward each metric.
 
-If two definitions give different values, the assistant uses Python to calculate both. It shows both values and asks which definition to use. It asks one question at a time in your language. If you defer the choice, the report shows each value with its definition.
+If two definitions give different values, the skill uses Python to calculate both. The skill shows both values and asks which definition to use. It asks one question at a time in your language. If you defer the choice, the report shows each value with its definition.
 
-If the data needs cleaning, the assistant asks which rules to apply. It applies the rules you approve to a copy of the data.
+If the data needs cleaning, the skill asks which rules to apply. It applies the rules you approve to a copy of the data.
 
-The skill creates an HTML report and a JSON summary. Open the **Summary** tab for the results and charts. Open the **Details** tab for the definitions, source rows, and calculations.
+The skill creates an HTML report and a JSON summary. Open the **Summary** tab for results and charts. Open the **Details** tab for these items.
+
+- Metric definitions
+- Source rows
+- Calculations
 
 </details>
 
@@ -58,11 +62,13 @@ Start Codex or Claude Code from your project folder. The skill creates its work 
 
 1. Open **Settings → Skills**. Some versions list skills under **Customize → Skills** or **Plugins**.
 2. Upload `ask-first-eda.zip`.
-3. Ask Claude to run `scripts/check_install.py` from the uploaded skill. The app may block package installation.
+3. Ask Claude to run `scripts/check_install.py` from the uploaded skill. The app may block attempts to install packages.
 
 To build the ZIP from source, run `python scripts/package_skill.py` from the repository root. Upload `dist/ask-first-eda.zip`.
 
-To update a local installation, replace the installed folder. To uninstall the skill, remove that folder. In the desktop app, upload the new ZIP to update the skill or remove the skill through the app.
+To update the local skill, replace its folder. To uninstall the local skill, remove its folder.
+
+In the desktop app, upload the new ZIP to update the skill. Use the app menu to remove the skill.
 
 ## Try the production report example
 
@@ -70,13 +76,29 @@ To update a local installation, replace the installed folder. To uninstall the s
 2. Start `/ask-first-eda`.
 3. Ask “Show production and utilization by line.”
 
-The assistant inspects the workbook. It asks which hours count toward utilization and which cleaning rules to apply. Open `eda-work/delivery/report.html` to read the results. Use `eda_summary.json` in the same folder to read the results in code.
+The skill inspects the workbook. It asks which hours count toward utilization and which cleaning rules to apply.
+
+Open `eda-work/delivery/report.html` to read the results. Use `eda_summary.json` in the same folder to read the results in code.
 
 ## Supported files
 
-The skill reads CSV, TSV, Excel (`.xlsx`), JSON, JSONL, Parquet, and Markdown tables. It detects older Excel files (`.xls`). The skill does not guarantee that it can read them. Korean chart labels require a system font that supports Hangul.
+The skill reads these formats.
 
-The skill preserves the source file. Its scope excludes model training, model tuning, automatic hypothesis tests, p-values, and claims about causation.
+- CSV and TSV
+- Excel (`.xlsx`)
+- JSON and JSONL
+- Parquet
+- Markdown tables
+
+The skill detects older Excel files (`.xls`). It may fail to read them.
+
+Korean chart labels require a system font that supports Hangul.
+
+The skill preserves the source file. Its scope excludes these tasks.
+
+- Train or tune models.
+- Run automatic hypothesis tests or calculate p-values.
+- Make claims about causation.
 
 ## Examples
 
@@ -90,27 +112,40 @@ The skill preserves the source file. Its scope excludes model training, model tu
 
 ## Evaluation
 
+Ask First EDA used more tokens than a one-line instruction. It also scored higher in the main stress evaluation, 90.74 against 51.16. It tied or led in 6/6 cases. This result met the preregistered decision rule. The median analyst token count was 3.29 times higher.
+
+| Measure | One-line instruction with relative-path guidance | Ask First EDA |
+| --- | ---: | ---: |
+| Main score | 51.16 | 90.74 |
+| Correct final values | 22/48 | 42/48 |
+| Required questions the analyst asked | 3/24 | 22/24 |
+| Weaker-model score | 25.93 | 26.23 |
+
+With the weaker model, the scores were nearly equal. Both conditions yielded the same counts of correct final values and required questions the analyst asked.
+
+Before the skill changed, the analyst asked a first-turn question in 0/8 probe runs. With the updated skill, the analyst asked in 6/6 runs that required a question and 0/2 runs that required none.
+
+The evaluator wrote a new numeric checker after seeing the results and used it to rescore them. The checker agreed with an independent review on 16/16 sampled slots.
+
+The skill’s author designed synthetic cases to test behaviors the skill specifies. The evaluation used a simulated user.
+
+[Stress evaluation results](evals/stress_summary.md)
+
+### Earlier evaluation
+
 The same analyst model ran six synthetic cases twice under each condition. An independent review scored the 36 runs.
 
 | Measure | No skill | One-line instruction | Ask First EDA |
 | --- | ---: | ---: | ---: |
 | Correct numeric results | 18/24 | 24/24 | 24/24 |
-| Final values with a confirmed definition | 14/24 | 18/24 | 18/24 |
+| Final values with an established definition | 14/24 | 18/24 | 18/24 |
 | Runs where the analyst assumed a definition without evidence | 6/12 | 2/12 | 0/12 |
 
 In one case, the analyst needed to ask which records to count. No condition asked that question in either run. The one-line instruction and the skill both produced values for each possible definition.
 
-Compared with the one-line instruction, the skill took 1.76 times as long and used 2.00 times as many tokens. Both ratios compare medians per analyst run.
+The skill took 1.76 times as long as the one-line instruction. The skill used 2.00 times as many tokens. Both ratios compare medians per analyst run.
 
 [Full results, including delivery checks and grading corrections](evals/abc_summary.md) · [Earlier evaluation](evals/ab_summary.md)
-
-### Next evaluation
-
-We plan to test the one-line instruction and the skill on the same production log. We will score three behaviors separately.
-
-- **“How many units did the line produce per hour?”** Does the analyst ask whether to include hours when the line stopped?
-- **“How many units did the line produce per operating hour?”** Does the analyst calculate the correct value without asking which hours to count?
-- **“I’ll decide later.”** If the user defers the choice, does the report show both values and label which hours each value includes?
 
 ### Installation checks
 
