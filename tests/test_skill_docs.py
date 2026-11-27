@@ -99,29 +99,115 @@ def test_readme_introduces_workflow_before_install(readme_text):
     assert "](https://github.com/LTLJH/ask-first-eda/releases/latest)" in install
 
 
+def readme_evaluation_section(readme_text):
+    section = re.search(r"^## (?:Evaluation|평가 결과)\n(.*?)(?=^#{1,2} |\Z)", readme_text, re.M | re.S)
+    return section[1] if section else ""
+
+
 @pytest.fixture
-def evaluation(readme_text):
-    return re.split(r"^## (?:Evaluation|평가 결과)$", readme_text, flags=re.M)[1].split("\n### ")[0].split("\n## ")[0]
+def stress_evaluation(readme_text):
+    return re.split(r"^### ", readme_evaluation_section(readme_text), maxsplit=1, flags=re.M)[0]
 
 
-def test_readme_evaluation_links_current_and_earlier_results(evaluation):
-    links = re.findall(r"\]\(([^)]+)\)", evaluation)
-    assert links == ["evals/abc_summary.md", "evals/ab_summary.md"]
-    assert all((ROOT / link).is_file() for link in links)
-    assert not any(value in evaluation for value in ("4.54", "29.1%", "1.8%"))
+@pytest.fixture
+def earlier_evaluation(readme_text):
+    section = re.search(
+        r"^### (?:Earlier evaluation|이전 평가)\n(.*?)(?=^### |\Z)",
+        readme_evaluation_section(readme_text),
+        re.M | re.S,
+    )
+    return section[1] if section else ""
 
 
-def test_readme_evaluation_reports_scores_missed_question_and_cost(evaluation):
-    rows = [line.split("|")[2:-1] for line in evaluation.splitlines() if line.startswith("|")]
+def test_readme_evaluation_links_current_and_earlier_results(earlier_evaluation):
+    links = re.findall(r"\]\(([^)]+)\)", earlier_evaluation)
+    expected = {"evals/abc_summary.md", "evals/ab_summary.md"}
+    assert expected <= set(links), "Earlier evaluation must link to the A/B/C and A/B summaries"
+    assert all((ROOT / link).is_file() for link in expected)
+    assert not any(value in earlier_evaluation for value in ("4.54", "29.1%", "1.8%"))
+
+
+def test_readme_evaluation_reports_scores_missed_question_and_cost(earlier_evaluation):
+    rows = [line.split("|")[2:-1] for line in earlier_evaluation.splitlines() if line.startswith("|")]
     assert [[cell.strip() for cell in row] for row in rows[2:]] == [
         ["18/24", "24/24", "24/24"],
         ["14/24", "18/24", "18/24"],
         ["6/12", "2/12", "0/12"],
     ]
-    assert re.search(r"no condition asked|질문을 놓쳤", evaluation, re.I)
-    assert re.search(r"time|시간", evaluation, re.I)
-    assert re.search(r"tokens?|토큰", evaluation, re.I)
-    assert "1.76" in evaluation and "2.00" in evaluation
+    assert re.search(r"no condition asked|질문을 놓쳤", earlier_evaluation, re.I)
+    assert re.search(r"time|시간", earlier_evaluation, re.I)
+    assert re.search(r"tokens?|토큰", earlier_evaluation, re.I)
+    assert "1.76" in earlier_evaluation and "2.00" in earlier_evaluation
+
+
+def test_readme_stress_evaluation_compares_one_line_instruction_and_skill(stress_evaluation):
+    table = re.search(
+        r"^(\|[^\n]+\|)[ \t]*\n"
+        r"^\|(?:[ \t]*:?-+:?[ \t]*\|){3}[ \t]*\n"
+        r"((?:^\|[^\n]+\|[ \t]*(?:\n|$))+)",
+        stress_evaluation,
+        re.M,
+    )
+    assert table, "The opening of Evaluation must contain a two-condition stress evaluation table"
+    headings = [cell.strip() for cell in table[1].split("|")[1:-1]]
+    assert len(headings) == 3, "The stress evaluation table must have a measure and two condition columns"
+    _, one_line, skill = headings
+    assert re.search(r"\bB[′’']|one[- ]line|한 줄 지침", one_line, re.I)
+    assert re.search(r"\bC\b|\bskill\b|Ask First EDA|스킬", skill, re.I)
+
+    rows = [tuple(cell.strip() for cell in row.strip().split("|")[1:-1]) for row in table[2].splitlines()]
+    assert all(len(row) == 3 for row in rows), "Each stress evaluation row must have two condition cells"
+    expected = {("51.16", "90.74"), ("22/48", "42/48"), ("3/24", "22/24"), ("25.93", "26.23")}
+    missing = expected - {row[1:] for row in rows}
+    assert not missing, f"Missing stress evaluation value pairs in B′, C order: {sorted(missing)}"
+
+
+def test_readme_stress_evaluation_reports_cost_and_corrections(stress_evaluation):
+    prose = re.sub(r"^\s*\|[^\n]*", "", stress_evaluation, flags=re.M)
+    assert any(
+        re.search(r"(?<![\w.])3\.(?:29|3)(?!\d|\.\d)", sentence)
+        and re.search(r"\btokens?\b|토큰", sentence, re.I)
+        for sentence in markdown_sentences(prose)
+    ), "Stress evaluation prose must give the token ratio"
+    assert re.search(r"(?<![\d/])0/8(?![\d/]).*?(?<![\d/])6/6(?![\d/])", prose, re.S), (
+        "Stress evaluation prose must give the first-turn question counts before and after the fix"
+    )
+    assert re.search(r"(?<![\d/])16/16(?![\d/])", prose), (
+        "Stress evaluation prose must give the numeric grading agreement"
+    )
+
+
+def test_readme_stress_evaluation_links_summary(stress_evaluation):
+    summary = "evals/stress_summary.md"
+    assert summary in re.findall(r"\]\(([^)]+)\)", stress_evaluation)
+    assert (ROOT / summary).is_file()
+
+
+def test_readme_evaluation_orders_stress_earlier_and_installation(readme_text, stress_evaluation, request):
+    readme = request.node.callspec.params["readme_text"]
+    expected = {
+        "README.md": ["Earlier evaluation", "Installation checks"],
+        "README.ko.md": ["이전 평가", "설치 확인 결과"],
+    }
+    headings = re.findall(r"^### (.+)$", readme_evaluation_section(readme_text), re.M)
+    assert headings[:2] == expected[readme]
+    assert re.search(r"^\|[^\n]*\|\s*51\.16\s*\|\s*90\.74\s*\|", stress_evaluation, re.M)
+
+
+def test_readme_removes_next_evaluation(readme_text):
+    assert not re.search(r"Next evaluation|다음 평가", readme_text, re.I)
+
+
+@pytest.mark.parametrize("readme_text", ["README.md"], indirect=True)
+def test_readme_evaluation_uses_short_sentences_without_semicolons(stress_evaluation, earlier_evaluation):
+    for section in (stress_evaluation, earlier_evaluation):
+        assert section.strip(), "Both evaluation sections must be present"
+        assert ";" not in section
+        prose = re.sub(r"^\s*\|[^\n]*", "", section, flags=re.M)
+        prose = re.sub(r"\[([^\]\n]+)\]\([^)]+\)", r"\1", prose)
+        for sentence in markdown_sentences(prose):
+            words = re.findall(r"\S*\w\S*", sentence)
+            assert len(words) <= 25, f"Evaluation sentence has {len(words)} words: {sentence.strip()}"
 
 
 def test_abc_summary_distinguishes_correct_numbers_from_confirmed_values():
