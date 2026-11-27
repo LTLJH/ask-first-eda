@@ -1,4 +1,5 @@
 import csv
+from decimal import Decimal
 import json
 from pathlib import Path
 import re
@@ -644,3 +645,189 @@ def test_audit_applies_explicit_source_encoding(tmp_path, monkeypatch):
     monkeypatch.setattr(audit_clean, "load_table", record_loaded_names)
     assert audit(source, cleaned, excluded, encoding="cp949") == expected
     assert ("cp949", ["똠"]) in decoded_sources
+
+
+@pytest.fixture
+def reconcile_csv_files(tmp_path):
+    source = write_csv(tmp_path / "source.csv", ("value", "units"), [(8, 2), (3, 1)])
+    return source, tmp_path / "cleaned.csv", write_excluded(tmp_path / "excluded.csv")
+
+
+def reconcile_result(completed, status):
+    assert completed.returncode == (0 if status == "pass" else 1), completed.stderr or completed.stdout
+    result = json.loads(completed.stdout, parse_float=Decimal)
+    assert result["status"] == status
+    return result
+
+
+def assert_reconcile_totals(group, *, source, kept, cleaned, excluded, difference):
+    assert "group" in group
+    assert Decimal(str(group["source_total"])) == source
+    assert Decimal(str(group["kept_source_total"])) == kept
+    assert Decimal(str(group["cleaned_total"])) == cleaned
+    assert Decimal(str(group["excluded_total"])) == excluded
+    assert abs(Decimal(str(group["difference"]))) == difference
+
+
+def test_reconcile_passes_for_matching_totals_with_repeated_options(reconcile_csv_files):
+    source, cleaned, excluded = reconcile_csv_files
+    write_csv(cleaned, ("_source_sheet", "_source_row", "amount", "count"),
+              [("", 3, 3, 1), ("", 2, 8, 2)])
+
+    completed = run_audit_cli(source, cleaned, excluded, "--reconcile", "amount=value",
+                              "--reconcile", "count=units")
+
+    result = reconcile_result(completed, "pass")
+    assert result["unexplained"] == []
+    entries = result["reconcile"]
+    assert len(entries) == 2
+    by_mapping = {(entry["cleaned_col"], entry["source_col"]): entry for entry in entries}
+    amount = by_mapping["amount", "value"]
+    count = by_mapping["count", "units"]
+    assert "group_col" in amount and "group_col" in count
+    amount_group, = amount["groups"]
+    count_group, = count["groups"]
+    assert_reconcile_totals(amount_group, source=11, kept=11, cleaned=11, excluded=0, difference=0)
+    assert_reconcile_totals(count_group, source=3, kept=3, cleaned=3, excluded=0, difference=0)
+
+
+def test_reconcile_reports_difference_when_a_value_changes(reconcile_csv_files):
+    source, cleaned, excluded = reconcile_csv_files
+    write_csv(cleaned, ("_source_sheet", "_source_row", "amount"), [("", 2, 10), ("", 3, 3)])
+
+    completed = run_audit_cli(source, cleaned, excluded, "--reconcile", "amount=value")
+
+    result = reconcile_result(completed, "fail")
+    assert result["unexplained"] == []
+    entry, = result["reconcile"]
+    group, = entry["groups"]
+    assert_reconcile_totals(group, source=11, kept=11, cleaned=13, excluded=0, difference=2)
+
+
+def test_reconcile_reports_a_difference_only_for_the_affected_source_group(tmp_path):
+    source = tmp_path / "source.xlsx"
+    workbook = Workbook()
+    workbook.active.title = "First"
+    workbook.create_sheet("Second")
+    workbook.create_sheet("Outside")
+    for sheet, team, value in [("First", "A", 8), ("Second", "B", 3), ("Outside", "A", 20)]:
+        workbook[sheet].append(["team", "value"])
+        workbook[sheet].append([team, value])
+    workbook.save(source)
+    workbook.close()
+    cleaned = write_csv(tmp_path / "cleaned.csv", ("_source_sheet", "_source_row", "amount"),
+                        [("Second", 2, 3), ("First", 2, 9)])
+    excluded = write_excluded(tmp_path / "excluded.csv")
+
+    completed = run_audit_cli(source, cleaned, excluded, "--header-row", "1", "--sheets", "First,Second",
+                              "--reconcile", "amount=value@team")
+
+    result = reconcile_result(completed, "fail")
+    assert result["unexplained"] == []
+    entry, = result["reconcile"]
+    assert (entry["cleaned_col"], entry["source_col"], entry["group_col"]) == ("amount", "value", "team")
+    assert len(entry["groups"]) == 2
+    groups = {group["group"]: group for group in entry["groups"]}
+    assert_reconcile_totals(groups["A"], source=8, kept=8, cleaned=9, excluded=0, difference=1)
+    assert_reconcile_totals(groups["B"], source=3, kept=3, cleaned=3, excluded=0, difference=0)
+
+
+def test_reconcile_includes_logged_exclusions_in_source_total(reconcile_csv_files):
+    source, cleaned, excluded = reconcile_csv_files
+    write_csv(cleaned, ("_source_sheet", "_source_row", "amount"), [("", 2, 8)])
+    write_excluded(excluded, [("", 3, "Outside the reporting scope")])
+
+    completed = run_audit_cli(source, cleaned, excluded, "--reconcile", "amount=value")
+
+    result = reconcile_result(completed, "pass")
+    assert result["unexplained"] == []
+    entry, = result["reconcile"]
+    group, = entry["groups"]
+    assert_reconcile_totals(group, source=11, kept=8, cleaned=8, excluded=3, difference=0)
+
+
+def test_reconcile_reports_unexplained_rows_even_when_kept_total_matches(reconcile_csv_files):
+    source, cleaned, excluded = reconcile_csv_files
+    write_csv(cleaned, ("_source_sheet", "_source_row", "amount"), [("", 2, 8)])
+
+    completed = run_audit_cli(source, cleaned, excluded, "--reconcile", "amount=value")
+
+    result = reconcile_result(completed, "fail")
+    assert result["unexplained"] == [{"sheet": "", "row": 3}]
+
+
+def test_reconcile_accepts_comma_formatted_numeric_text(tmp_path):
+    source = write_csv(tmp_path / "source.csv", ("value",), [("1,234.10",), ("1005.20",)])
+    cleaned = write_csv(tmp_path / "cleaned.csv", ("_source_sheet", "_source_row", "amount"),
+                        [("", 2, "1234.1"), ("", 3, "1,005.2")])
+    excluded = write_excluded(tmp_path / "excluded.csv")
+
+    completed = run_audit_cli(source, cleaned, excluded, "--reconcile", "amount=value")
+
+    result = reconcile_result(completed, "pass")
+    entry, = result["reconcile"]
+    group, = entry["groups"]
+    total = Decimal("2239.30")
+    assert_reconcile_totals(group, source=total, kept=total, cleaned=total, excluded=0, difference=0)
+
+
+@pytest.mark.parametrize("mapping, last_amount, status, total, difference", [
+    ("amount=value", 4, "pass", 11, 0),
+    ("amount=value", 5, "fail", 12, 1),
+    ("amount=value@team", 4, "pass", 11, 0),
+], ids=["total-matches", "total-differs", "grouped-total-matches"])
+def test_reconcile_with_expand_compares_totals(tmp_path, mapping, last_amount, status, total, difference):
+    source = write_csv(tmp_path / "source.csv", ("team", "value"), [("A", 8), ("A", 3)])
+    # The repeated address sums to 7, while the source row contains 8.
+    cleaned = write_csv(tmp_path / "cleaned.csv", ("_source_sheet", "_source_row", "amount"),
+                        [("", 2, 3), ("", 2, 4), ("", 3, last_amount)])
+    excluded = write_excluded(tmp_path / "excluded.csv")
+
+    completed = run_audit_cli(source, cleaned, excluded, "--expand", "--reconcile", mapping)
+
+    result = reconcile_result(completed, status)
+    assert result["unexplained"] == []
+    entry, = result["reconcile"]
+    group, = entry["groups"]
+    if "@" in mapping:
+        assert entry["group_col"] == "team"
+        assert group["group"] == "A"
+    assert_reconcile_totals(group, source=11, kept=11, cleaned=total, excluded=0, difference=difference)
+
+
+@pytest.mark.parametrize("amount, status, difference", [
+    ("0.30", "pass", "0.10"),
+    ("0.2999", "fail", "0.1001"),
+], ids=["at-tolerance", "beyond-tolerance"])
+def test_reconcile_applies_decimal_tolerance_at_the_boundary(tmp_path, amount, status, difference):
+    source = write_csv(tmp_path / "source.csv", ("value",), [("0.40",)])
+    cleaned = write_csv(tmp_path / "cleaned.csv", ("_source_sheet", "_source_row", "amount"),
+                        [("", 2, amount)])
+    excluded = write_excluded(tmp_path / "excluded.csv")
+
+    completed = run_audit_cli(source, cleaned, excluded, "--reconcile", "amount=value",
+                              "--reconcile-tolerance", "0.10")
+
+    result = reconcile_result(completed, status)
+    entry, = result["reconcile"]
+    group, = entry["groups"]
+    assert_reconcile_totals(group, source=Decimal("0.40"), kept=Decimal("0.40"),
+                            cleaned=Decimal(amount), excluded=0, difference=Decimal(difference))
+
+
+def test_reconcile_limits_group_details_to_fifty(tmp_path):
+    teams = [f"team-{number:02d}" for number in range(53)]
+    source = write_csv(tmp_path / "source.csv", ("team", "value"), [(team, 1) for team in teams])
+    cleaned = write_csv(tmp_path / "cleaned.csv", ("_source_sheet", "_source_row", "amount"),
+                        [("", row, 1) for row in range(2, len(teams) + 2)])
+    excluded = write_excluded(tmp_path / "excluded.csv")
+
+    completed = run_audit_cli(source, cleaned, excluded, "--reconcile", "amount=value@team")
+
+    result = reconcile_result(completed, "pass")
+    entry, = result["reconcile"]
+    assert len(entry["groups"]) == 50
+    assert entry["truncated_groups"] == 3
+    reported_teams = {group["group"] for group in entry["groups"]}
+    assert len(reported_teams) == 50
+    assert reported_teams <= set(teams)

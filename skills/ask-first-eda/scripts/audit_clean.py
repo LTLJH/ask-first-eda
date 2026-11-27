@@ -1,8 +1,8 @@
-"""Audit source row coverage, retained values, and formula-like text in cleaned CSVs."""
+"""Audit source row coverage, retained values, totals, and formula-like text in cleaned CSVs."""
 
 import argparse
-from collections import Counter
-from decimal import Decimal, InvalidOperation
+from collections import Counter, defaultdict
+from decimal import Decimal, DecimalException, Inexact, InvalidOperation, localcontext
 from itertools import chain
 from pathlib import Path
 import sys
@@ -11,11 +11,15 @@ from zipfile import is_zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from eda_io import (
-    GROUPED_NUMBER, NUMBER, add_table_args, emit_json, is_missing, load_table, neutralize_formula, read_source,
+    GROUPED_NUMBER, NUMBER, add_table_args, emit_json, is_missing, load_table, neutralize_formula,
+    numeric_decimal, read_source, refuse_source_output,
 )
 
 
 MISMATCH_LIMIT = 20
+RECONCILE_EXAMPLE_LIMIT = 10
+RECONCILE_GROUP_LIMIT = 50
+TOTAL_COLUMNS = ("source_total", "kept_source_total", "cleaned_total", "excluded_total")
 
 
 def find_formula_cells(table):
@@ -153,6 +157,87 @@ def check_passthrough(cleaned, references, sources, mappings, errors):
         errors.append(f"{mismatches} passthrough mismatches in total (showing the first {MISMATCH_LIMIT}).")
 
 
+def check_reconcile(cleaned, references, removed, sources, mappings, tolerance, errors):
+    invalid_values = 0
+
+    def read_number(value, column, address):
+        nonlocal invalid_values
+        if isinstance(value, str):
+            value = value.strip()
+            if GROUPED_NUMBER.fullmatch(value):
+                value = value.replace(",", "")
+        if is_missing(value) or value == "":
+            return Decimal(0)
+        number = numeric_decimal(value)
+        if number is None:
+            invalid_values += 1
+            if invalid_values <= RECONCILE_EXAMPLE_LIMIT:
+                errors.append(f"Non-numeric value in column {column!r} at {address} for --reconcile.")
+            return Decimal(0)
+        return number
+
+    kept = set(references.values())
+    entries = []
+    for cleaned_column, source_column, group_column in mappings:
+        entry = {"cleaned_col": cleaned_column, "source_col": source_column,
+                 "group_col": group_column, "groups": []}
+        entries.append(entry)
+        error_count = len(errors)
+        if cleaned_column not in cleaned.frame.columns:
+            errors.append(f"Unknown cleaned column {cleaned_column!r} for --reconcile.")
+        for sheet, source in sources.items():
+            scope = f" in sheet {sheet!r}" if sheet else ""
+            for column in dict.fromkeys((source_column, group_column)):
+                if column is not None and column not in source.frame.columns:
+                    errors.append(f"Unknown source column {column!r}{scope} for --reconcile.")
+        if len(errors) != error_count or not sources:
+            continue
+
+        totals = defaultdict(lambda: dict.fromkeys(TOTAL_COLUMNS, Decimal(0)))
+        if group_column is None:
+            totals[None] = dict.fromkeys(TOTAL_COLUMNS, Decimal(0))
+        kept_groups = {}
+        for sheet, source in sources.items():
+            labels = source.frame[group_column] if group_column is not None else (None for _ in source.row_refs)
+            rows = zip(source.row_refs, source.frame[source_column], labels, strict=True)
+            for row, value, label in rows:
+                group = None if is_missing(label) or label == "" else str(label)
+                address = (sheet, str(row))
+                number = read_number(value, source_column, source_address(sheet, row))
+                totals[group]["source_total"] += number
+                if address in kept:
+                    totals[group]["kept_source_total"] += number
+                    kept_groups[address] = group
+                if address in removed:
+                    totals[group]["excluded_total"] += number
+
+        for position, address in references.items():
+            if address in kept_groups:
+                group = kept_groups[address]
+                value = cleaned.frame.at[position, cleaned_column]
+                line = cleaned.row_refs[position]
+                totals[group]["cleaned_total"] += read_number(value, cleaned_column, f"cleaned row {line}")
+
+        mismatches = 0
+        for group, sums in totals.items():
+            difference = sums["cleaned_total"] - sums["kept_source_total"]
+            if difference.copy_abs() > tolerance:
+                mismatches += 1
+            if len(entry["groups"]) < RECONCILE_GROUP_LIMIT:
+                entry["groups"].append({"group": group, **{key: str(value) for key, value in sums.items()},
+                                        "difference": str(difference)})
+        if mismatches:
+            errors.append(f"Reconcile difference exceeds tolerance in {mismatches} group(s) "
+                          f"for {cleaned_column!r}={source_column!r}.")
+        if len(totals) > RECONCILE_GROUP_LIMIT:
+            entry["truncated_groups"] = len(totals) - RECONCILE_GROUP_LIMIT
+
+    if invalid_values > RECONCILE_EXAMPLE_LIMIT:
+        errors.append(f"{invalid_values} non-numeric values for --reconcile "
+                      f"(showing the first {RECONCILE_EXAMPLE_LIMIT}).")
+    return entries
+
+
 def check_header(source, table, errors):
     if table.header_uncertain:
         sheet = table.locator.get("sheet")
@@ -177,7 +262,7 @@ def incompatible_options(fmt, *, header_row, delimiter, header, encoding):
 
 def audit(source, cleaned, excluded, *, table_id=None, sheet=None, json_record_path=None,
           header_row=None, delimiter=None, header=None, encoding=None, sheets=None,
-          expand=False, passthrough=()):
+          expand=False, passthrough=(), reconcile=(), reconcile_tolerance=Decimal(0)):
     reference_errors, referenced_sheets = [], set()
     kept_rows, cleaned_table, formula_cells = read_references(
         cleaned, excluded=False, errors=reference_errors, sheets=referenced_sheets,
@@ -246,6 +331,12 @@ def audit(source, cleaned, excluded, *, table_id=None, sheet=None, json_record_p
                 errors.append(f"Duplicate cleaned reference to {source_address(name, row)} ({count} times).")
     if passthrough and cleaned_table is not None:
         check_passthrough(cleaned_table, kept_rows, source_tables, passthrough, errors)
+    reconciled = []
+    if reconcile and cleaned_table is not None:
+        with localcontext() as context:
+            context.traps[Inexact] = True
+            reconciled = check_reconcile(cleaned_table, kept_rows, removed, source_tables,
+                                         reconcile, reconcile_tolerance, errors)
     conflicts = [
         f"Source row {row} in sheet {name!r} is both kept and excluded."
         for name, row in sorted(kept & removed)
@@ -271,6 +362,8 @@ def audit(source, cleaned, excluded, *, table_id=None, sheet=None, json_record_p
     }
     if formula_cells:
         result["formula_cells"] = formula_cells
+    if reconcile:
+        result["reconcile"] = reconciled
     return result
 
 
@@ -281,24 +374,51 @@ def parse_passthrough(argument):
     return cleaned_column, source_column
 
 
+def parse_reconcile(argument):
+    message = "expected CLEANED_COL=SOURCE_COL[@GROUP]"
+    try:
+        cleaned_column, source_spec = parse_passthrough(argument)
+    except argparse.ArgumentTypeError:
+        raise argparse.ArgumentTypeError(message) from None
+    source_column, separator, group_column = source_spec.partition("@")
+    if not source_column or (separator and not group_column):
+        raise argparse.ArgumentTypeError(message)
+    return cleaned_column, source_column, group_column or None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("--cleaned", required=True, type=Path)
     parser.add_argument("--excluded", required=True, type=Path)
+    parser.add_argument("--out", type=Path, help="Write JSON to this file instead of stdout.")
     add_table_args(parser)
     parser.add_argument("--sheets", help="Comma-separated Excel sheet names (default: all sheets).")
     parser.add_argument("--expand", action="store_true", help="Allow multiple cleaned rows per source address.")
     parser.add_argument("--passthrough", action="append", type=parse_passthrough, default=[],
                         metavar="CLEANED_COL=SOURCE_COL", help="Audit values carried from a source column. Repeatable.")
+    parser.add_argument("--reconcile", action="append", type=parse_reconcile, default=[],
+                        metavar="CLEANED_COL=SOURCE_COL[@GROUP]", help="Compare sums by source group. Repeatable.")
+    parser.add_argument("--reconcile-tolerance", default="0", help="Maximum absolute difference per group.")
     args = parser.parse_args()
-    sheets = args.sheets.split(",") if args.sheets is not None else None
-    header = None if args.header is None else args.header == "yes"
-    result = audit(args.source, args.cleaned, args.excluded, table_id=args.table_id, sheet=args.sheet,
-                   json_record_path=args.json_record_path, header_row=args.header_row,
-                   delimiter=args.delimiter, header=header, encoding=args.encoding, sheets=sheets,
-                   expand=args.expand, passthrough=args.passthrough)
-    emit_json(result)
+    try:
+        tolerance = numeric_decimal(args.reconcile_tolerance)
+        if tolerance is None or tolerance < 0:
+            raise ValueError("--reconcile-tolerance must be a finite non-negative number.")
+        if args.out is not None:
+            refuse_source_output(args.out, args.source, args.cleaned, args.excluded)
+        sheets = args.sheets.split(",") if args.sheets is not None else None
+        header = None if args.header is None else args.header == "yes"
+        result = audit(args.source, args.cleaned, args.excluded, table_id=args.table_id, sheet=args.sheet,
+                       json_record_path=args.json_record_path, header_row=args.header_row,
+                       delimiter=args.delimiter, header=header, encoding=args.encoding, sheets=sheets,
+                       expand=args.expand, passthrough=args.passthrough, reconcile=args.reconcile,
+                       reconcile_tolerance=tolerance)
+        emit_json(result, args.out)
+    except DecimalException:
+        parser.exit(1, "Error: Reconciliation exceeded Decimal precision or range.\n")
+    except (OSError, TypeError, ValueError) as error:
+        parser.exit(1, f"Error: {error}\n")
     return int(result["status"] == "fail")
 
 
