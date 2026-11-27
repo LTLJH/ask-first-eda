@@ -1,118 +1,119 @@
 # Ask First EDA
 
-Ask First EDA는 지표의 계산 기준을 먼저 묻고, 그 기준으로 데이터를 분석해 차트가 담긴 리포트를 만듭니다.
+Ask First EDA는 데이터 파일을 읽고 질문에 대한 답을 차트와 함께 리포트에 담습니다.
 
 [English](README.md)
 
-| 시간 | 설비 상태 | 생산량(개) |
-| --- | --- | ---: |
-| 08:00–09:00 | 가동 | 18 |
-| 09:00–10:00 | 정지 | 0 |
-| 10:00–11:00 | 가동 | 22 |
-| 11:00–12:00 | 가동 | 20 |
+## 작동 방식
 
-[예제 리포트 바로 보기](https://ltljh.github.io/ask-first-eda/gallery/support_tickets.html) · [갤러리 보기](https://ltljh.github.io/ask-first-eda/gallery/index.html)\
-[Release에서 ZIP 받기](https://github.com/LTLJH/ask-first-eda/releases/latest)
+```mermaid
+flowchart LR
+    A["파일과 질문"] --> B["데이터 검토"] --> C["지표 계산"] --> D["리포트 작성"]
+```
 
-네 시간 동안 60개를 생산했습니다. 시간당 생산량은 전체 근무 시간 기준으로 15개/h, 가동한 세 시간 기준으로 20개/h입니다.
+<details>
+<summary>데이터를 검토하고 지표를 계산하는 방법</summary>
 
-> 시간당 생산량을 계산할 때 설비가 멈춘 한 시간도 포함할까요?
+Python으로 파일 구조를 확인합니다. 어떤 행을 계산에 넣을지는 사용자의 질문과 파일 내용을 보고 판단합니다.
 
-![리포트 요약 탭 예시](docs/assets/report-preview.png)
+두 기준으로 계산한 값이 다르면 두 값을 보여주고 어느 기준을 쓸지 묻습니다. 질문은 사용자의 언어로 한 번에 하나씩 합니다. 선택을 미루면 리포트에 각 값과 그 계산 기준을 함께 표시합니다.
+
+데이터를 정제해야 할 때는 어떤 규칙을 적용할지 먼저 묻습니다. 사용자가 승인한 규칙만 복사본에 적용합니다.
+
+분석 결과는 HTML 리포트와 JSON 요약 파일에 저장합니다. 리포트의 **요약** 탭에는 결과와 차트가, **세부** 탭에는 지표의 정의와 계산에 사용한 원본 행, 계산 과정이 나옵니다.
+
+</details>
+
+[예제 리포트 보기](https://ltljh.github.io/ask-first-eda/gallery/support_tickets.html) · [리포트 갤러리](https://ltljh.github.io/ask-first-eda/gallery/index.html)
+
+![예제 리포트의 요약 탭](docs/assets/report-preview.png)
 
 ## 설치
 
-Python 3.10 이상이 필요합니다. 압축을 푼 `ask-first-eda` 폴더에서 의존성을 설치하고 설치 상태를 점검하세요.
+[최신 릴리스](https://github.com/LTLJH/ask-first-eda/releases/latest)에서 ZIP 파일을 내려받으세요.
+
+### Codex와 Claude Code
+
+1. `ask-first-eda.zip`의 압축을 풉니다.
+2. 아래 표에서 설치할 위치를 골라 스킬 폴더를 복사합니다.
+3. 복사한 스킬 폴더에서 터미널을 엽니다.
+4. Python 3.10 이상에서 첫 번째 명령으로 필요한 패키지를 설치합니다.
+5. 두 번째 명령으로 설치 상태를 확인합니다.
+
+| 앱 | 한 프로젝트에서 사용 | 모든 프로젝트에서 사용 |
+| --- | --- | --- |
+| Codex | `<project>/.agents/skills/ask-first-eda/` | `~/.agents/skills/ask-first-eda/` |
+| Claude Code | `<project>/.claude/skills/ask-first-eda/` | `~/.claude/skills/ask-first-eda/` |
+
+Windows에서도 `python` 명령을 사용하세요.
 
 ```sh
 python -m pip install -r requirements.txt
 python -I scripts/check_install.py
 ```
 
-### Claude desktop app
+설치가 끝나면 프로젝트 폴더에서 Codex나 Claude Code를 실행하세요. 스킬은 이곳에 분석 작업 폴더를 만듭니다.
 
-1. [최신 Release](https://github.com/LTLJH/ask-first-eda/releases/latest)의 `ask-first-eda.zip`을 내려받아 **Settings → Skills**(또는 **Customize → Skills** / **Plugins**)에서 업로드하세요.
-2. 앱에서는 패키지 설치가 막힐 수 있으므로 Claude에게 업로드한 스킬의 `scripts/check_install.py`를 실행해 사용 가능한 의존성을 확인해 달라고 요청하세요.
-3. ZIP을 직접 만들려면 저장소 루트에서 `python scripts/package_skill.py`를 실행한 뒤 `dist/ask-first-eda.zip`을 업로드하세요.
+### Claude 데스크톱 앱
 
-### Claude Code
+1. **Settings → Skills**를 엽니다. 버전에 따라 **Customize → Skills** 또는 **Plugins**에 있습니다.
+2. `ask-first-eda.zip`을 업로드합니다.
+3. Claude에게 업로드한 스킬의 `scripts/check_install.py`를 실행해 달라고 요청합니다. 앱에서 패키지 설치를 제한할 수 있습니다.
 
-- 압축을 푼 폴더를 `<project>/.claude/skills/ask-first-eda/` 또는 `~/.claude/skills/ask-first-eda/`에 복사하세요(Release ZIP을 그 위치에 풀어도 됩니다).
-- 터미널을 프로젝트 폴더에서 열고 Claude Code를 시작하세요. 작업 폴더가 그곳에 생깁니다.
-- 한 프로젝트에만 적용하려면 프로젝트 경로를, 모든 프로젝트에 적용하려면 사용자 경로를 사용하세요.
+ZIP을 직접 만들려면 저장소 최상위 폴더에서 `python scripts/package_skill.py`를 실행하세요. 업로드할 파일은 `dist/ask-first-eda.zip`입니다.
 
-### Codex
+로컬 설치본을 업데이트하려면 스킬 폴더를 교체하세요. 삭제하려면 그 폴더를 지우세요. 데스크톱 앱에서는 새 ZIP을 업로드하거나 앱 메뉴에서 스킬을 삭제하세요.
 
-- 압축을 푼 폴더를 `<project>/.agents/skills/ask-first-eda/`에 복사하세요(Release ZIP을 그 위치에 풀어도 됩니다).
-- 스킬을 해당 프로젝트에서 사용하려면 시작 전에 터미널을 프로젝트 폴더에서 여세요.
-- 한 프로젝트에만 적용하려면 프로젝트 경로를 사용하세요.
+## 생산 일보로 시작하기
 
-Windows에서는 `python`을 사용하고 `python3`는 사용하지 마세요. PowerShell에서는 `Copy-Item -Recurse .\skills\ask-first-eda <project>\.claude\skills\ask-first-eda`를 사용하세요(Codex는 `.agents\skills` 경로).
+1. [예제 엑셀 파일](examples/messy_production_report/daily_report.xlsx)을 프로젝트 폴더에 복사합니다.
+2. `/ask-first-eda`를 실행합니다.
+3. “라인별 생산량과 가동률을 봐 줘”라고 요청합니다.
 
-업데이트는 설치된 폴더를 교체하거나 새 Release ZIP을 다시 업로드하면 됩니다. 제거는 폴더를 삭제하거나 앱에서 스킬을 삭제하세요.
+스킬이 파일을 읽고 가동률 계산에 어떤 시간을 포함할지, 어떤 정제 규칙을 적용할지 묻습니다. 결과를 보려면 `eda-work/delivery/report.html`을 여세요. 코드에서 결과를 읽으려면 같은 폴더의 `eda_summary.json`을 사용하세요.
 
-| 클라이언트 | 버전 | 날짜 | 확인 범위 | 첫 실행 |
-| --- | --- | --- | --- | --- |
-| Claude Code | 2.1.332 | 2026-11-26 | routing 4/4(install smoke) | pass (2026-11-26, clean project, support_tickets example: eda-work/delivery/report.html and eda_summary.json created in the project folder) |
-| Codex | 0.171.0 | 2026-11-26 | routing 4/4(install smoke) | covered by evaluation runs (codex exec) |
-| Claude desktop app | — | 2026-11-26 | upload and run, manual | pass (manual, 2026-11-26) |
+## 지원하는 파일
 
-자동 확인 결과는 [설치 스모크 상태](evals/install_smoke.json)에서 확인하세요.
+CSV, TSV, 엑셀(`.xlsx`), JSON, JSONL, Parquet, 마크다운 표를 읽습니다. 예전 엑셀 파일(`.xls`)은 형식을 감지해도 내용을 읽지 못할 수 있습니다. 차트에 한글을 표시하려면 한글을 지원하는 글꼴이 필요합니다.
 
-### 1분 안에 해보기
+원본 파일은 그대로 둡니다. 모델 학습과 튜닝, 자동 가설검정, p값 계산은 지원하지 않습니다. 분석 결과만으로 인과관계를 단정하지 않습니다.
 
-`examples/messy_production_report/daily_report.xlsx`를 프로젝트로 복사한 뒤 클라이언트에서 `/ask-first-eda`로 “라인별 생산량과 가동률을 봐 줘”라고 요청하세요.
+## 분석 예시
 
-예상 흐름: 한눈에 보기 → 가동률 분모 질문 → 정제 계획 확인 → 리포트.
-
-## 리포트 예시
-
-스킬은 사용자의 언어로 한 번에 한 가지를 묻습니다. 리포트의 요약 탭에는 분석 결과와 차트가, 세부 탭에는 근거와 계산 과정이 나옵니다.
-
-[리포트 갤러리](docs/gallery/index.html)
-
-- [서울 따릉이](docs/gallery/seoul_bike.html) · [분석 과정](docs/walkthroughs/seoul_bike.md)
-- [배치별 스팀 사용량](docs/gallery/factory_utility.html) · [분석 과정](docs/walkthroughs/factory_utility.md)
-- [고객센터 티켓 SLA](docs/gallery/support_tickets.html) · [분석 과정](docs/walkthroughs/support_tickets.md)
-- [설비 센서](docs/gallery/equipment_sensors.html) · [분석 과정](docs/walkthroughs/equipment_sensors.md)
-- [생산 일보](docs/gallery/messy_production_report.html) · [분석 과정](docs/walkthroughs/messy_production_report.md)
-
-[영업시간 기준에 따른 첫 응답 준수율 차이](docs/walkthroughs/support_tickets.md#sla-clock-comparison)와 [정제 과정에서 제외한 행을 확인하는 방법](docs/walkthroughs/messy_production_report.md#cleaning)을 살펴볼 수 있습니다.
-
-[시스템 구조](docs/architecture.md)
-
-## 지원 입력
-
-갤러리에는 CSV·Excel·JSONL·Parquet 예시가 있습니다.
-
-| 입력 | 지원 범위 |
+| 데이터 | 리포트와 분석 과정 |
 | --- | --- |
-| CSV / TSV | 검사 및 분석 |
-| `.xlsx` | 검사 및 분석 |
-| JSON / JSONL | 검사 및 분석 |
-| Parquet | 검사 및 분석 |
-| Markdown 표 | 검사 및 분석 |
-| `.xls` | 감지 가능; 읽기 지원은 보장하지 않음 |
+| 고객센터 티켓 | [리포트](docs/gallery/support_tickets.html) · [시간 기준에 따른 첫 응답 준수율 차이](docs/walkthroughs/support_tickets.md#sla-clock-comparison) |
+| 생산 일보 | [리포트](docs/gallery/messy_production_report.html) · [정제 과정에서 제외한 행](docs/walkthroughs/messy_production_report.md#cleaning) |
+| 설비 센서 | [리포트](docs/gallery/equipment_sensors.html) · [분석 과정](docs/walkthroughs/equipment_sensors.md) |
+| 배치별 스팀 사용량 | [리포트](docs/gallery/factory_utility.html) · [분석 과정](docs/walkthroughs/factory_utility.md) |
+| 서울 따릉이 | [리포트](docs/gallery/seoul_bike.html) · [분석 과정](docs/walkthroughs/seoul_bike.md) |
 
-차트에 한글을 표시하려면 한글을 지원하는 시스템 폰트가 필요합니다.
+## 평가 결과
 
-## 하지 않는 일
+합성 데이터 사례 6개를 대상으로 총 36회 실행했습니다. 그 결과를 독립적으로 검토해 세 조건을 비교했습니다.
 
-- 모델 학습 또는 튜닝
-- 자동 가설검정 또는 p-value 산출
-- 인과관계 주장
-- 원본 파일 수정
+| 조건 | 수치가 맞은 결과 |
+| --- | ---: |
+| A. 스킬 없이 실행 | 18/24 |
+| B. 한 줄 지침 사용 | 24/24 |
+| C. Ask First EDA 사용 | 24/24 |
 
-## 평가
+B와 C 모두 24개 중 18개에서 계산값과 지표 정의를 뒷받침하는 근거를 확인했습니다. 세 조건 모두 분모를 확인해야 하는 경우에 질문하지 않았습니다. C에서는 근거 없이 지표 정의를 단정하거나 홈 디렉터리 경로를 노출한 사례가 없었습니다. 분석 시간과 토큰 사용량은 중앙값 기준으로 C가 B의 약 두 배였습니다.
 
-합성 케이스 6개를 36회 실행했습니다. 독립 검토에서 수치 정답은 기본 조건(A) 18/24, 한 줄 지침(B) 24/24, 스킬(C) 24/24였습니다.
-정의까지 확인해 확정값으로 쓸 수 있었던 지표는 B와 C 모두 18/24였습니다. C에서는 근거 없이 정의를 단정하거나 홈 경로를 노출한 사례가 없었습니다.
-세 조건 모두 확인이 필요한 분모를 묻지 않았습니다. C의 실행당 분석 시간과 토큰 사용량은 중앙값 기준으로 B의 약 2배였습니다. [A/B/C 결과와 채점 보정](evals/abc_summary.md)
+[평가 결과와 채점 보정](evals/abc_summary.md) · [이전 평가](evals/ab_summary.md)
 
-이전 버전의 결과는 [A/B 요약](evals/ab_summary.md)에 있습니다.
+### 설치 확인 결과
+
+| 앱 | 확인한 버전 | 2026년 11월 26일 결과 |
+| --- | --- | --- |
+| Claude Code | 2.1.332 | 요청에 맞는 스킬을 고르는 테스트 4개를 통과했습니다. 새 프로젝트에서 HTML 리포트와 JSON 요약 파일을 생성했습니다. |
+| Codex | 0.171.0 | 같은 테스트 4개를 통과했습니다. 평가에는 `codex exec`를 사용했습니다. |
+| Claude 데스크톱 앱 | 버전 기록 없음 | 직접 ZIP을 업로드해 실행을 확인했습니다. |
+
+[설치 테스트 결과](evals/install_smoke.json) · [시스템 구조](docs/architecture.md)
 
 ## 라이선스
 
-코드는 [MIT](LICENSE) 라이선스를 따릅니다. [예시 데이터](examples/README.md)에는 각각의 라이선스가 적용됩니다.
+코드는 [MIT 라이선스](LICENSE)를 따릅니다. [예제 데이터](examples/README.md)는 각각의 라이선스를 따릅니다.
 
 [기여 안내](CONTRIBUTING.md)

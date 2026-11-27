@@ -168,15 +168,12 @@ def test_skill_version_matches_latest_changelog_version():
 @pytest.mark.parametrize("filename", ["README.md", "README.ko.md"])
 def test_readme_documents_desktop_install(filename):
     readme = (ROOT / filename).read_text(encoding="utf-8")
-    _, heading, desktop = readme.partition("### Claude desktop app\n")
-    assert heading
-    section = desktop.split("\n##", 1)[0]
+    heading = "Claude desktop app" if filename == "README.md" else "Claude 데스크톱 앱"
+    section = readme.split(f"### {heading}\n", 1)[1].split("\n## ", 1)[0]
     for term in ("python scripts/package_skill.py", "Settings", "Skills", "dist/ask-first-eda.zip", "check_install.py"):
         assert term in section
-    first_step = next(line for line in section.splitlines() if line.startswith("1. "))
-    assert RELEASE_URL in first_step
-    assert "`ask-first-eda.zip`" in first_step
-    assert "python scripts/package_skill.py" not in first_step
+    steps = [line for line in section.splitlines() if re.match(r"^\d+\. ", line)]
+    assert any("`ask-first-eda.zip`" in line for line in steps)
 
 
 @pytest.mark.parametrize("filename", ["README.md", "README.ko.md"])
@@ -184,27 +181,17 @@ def test_readme_documents_client_specific_install_contract(filename):
     readme = (ROOT / filename).read_text(encoding="utf-8")
     section = readme.split("\n## Install\n" if filename == "README.md" else "\n## 설치\n", 1)[1]
     section = section.split("\n## ", 1)[0]
-
-    assert "Python 3.10" in section
-    assert "python -m pip install -r requirements.txt" in section
-    assert "check_install.py" in section
-    assert "### Claude desktop app" in section
-    assert "### Claude Code" in section
-    assert "### Codex" in section
-    assert "~/.claude/skills/ask-first-eda/" in section
-    assert "<project>/.claude/skills/ask-first-eda/" in section
-    assert "<project>/.agents/skills/ask-first-eda/" in section
-    assert "Release zip" in section or "Release ZIP" in section
-    assert "PowerShell" in section
-    assert "Copy-Item -Recurse" in section
+    for term in (RELEASE_URL, "Python 3.10", "python -m pip install -r requirements.txt",
+                 "python -I scripts/check_install.py", "Windows"):
+        assert term in section
+    for client_dir in (".claude", ".agents"):
+        for base in ("~", "<project>"):
+            assert f"{base}/{client_dir}/skills/ask-first-eda/" in section
     assert not re.search(r"^python3(?:\s|$)", section, re.M)
     assert "업데이트" in section or "update" in section.lower()
-    assert "제거" in section or "remove" in section.lower()
-    assert "routing 4/4(install smoke)" in section
-    assert "upload and run, manual" in section
-    assert "pass (2026-11-26, clean project, support_tickets example: eda-work/delivery/report.html and eda_summary.json created in the project folder)" in section
-    assert "covered by evaluation runs (codex exec)" in section
-    assert "pass (manual, 2026-11-26)" in section
+    assert "삭제" in section or "remove" in section.lower()
+    for term in ("evals/install_smoke.json", "2.1.332", "0.171.0", "codex exec"):
+        assert term in readme
     assert "TBD" not in section
     assert "Before the rename" not in section
     assert "이름 변경 전" not in section

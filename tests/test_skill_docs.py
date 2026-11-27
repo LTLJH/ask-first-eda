@@ -66,31 +66,23 @@ def readme_text(request):
     return (ROOT / request.param).read_text(encoding="utf-8")
 
 
-def test_readme_opens_with_example_question_preview_and_install(readme_text):
-    title, value, rest = readme_text.strip().split("\n\n", 2)
-    assert re.fullmatch(r"# [^\n]+", title)
-    assert re.fullmatch(r"[^#!|>\n].+[.!]", value)
-    table = re.search(r"^\|[^\n]+\|\n\|[-: |]+\|\n((?:\|[^\n]+\|\n)+)", rest, re.M)
-    assert table and len(table[1].splitlines()) == 4, "Expected a four-row example"
-    question = re.search(r"^[^\n|]+\?$", rest, re.M)
-    preview = re.search(r"!\[[^\]]*\]\([^)]*report-preview\.png\)", rest)
-    install = re.search(r"^## (?:Install|설치)$", rest, re.M)
-    assert question and preview and install
-    assert table.end() <= question.start() < preview.start() < install.start()
-
-
-def test_readme_links_to_pages_and_release_in_opening(readme_text):
-    opening = readme_text.split("\n## ", 1)[0]
-    after_table = opening.rsplit("\n|", 1)[1]
+def test_readme_introduces_workflow_before_install(readme_text):
+    opening, install = re.split(r"^## (?:Install|설치)$", readme_text, maxsplit=1, flags=re.M)
+    diagram = re.search(r"```mermaid\n(flowchart LR\n.*?)\n```", opening, re.S)
+    assert diagram and diagram[1].count("-->") == 3
+    assert "|" not in diagram[1] and "{" not in diagram[1]
+    assert diagram.end() < opening.index("<details>") < opening.index("</details>")
+    assert opening.index("</details>") < opening.index("docs/assets/report-preview.png")
+    assert not re.search(r"^\|", opening, re.M)
     pages = "https://ltljh.github.io/ask-first-eda/gallery/"
-    assert f"]({pages}support_tickets.html)" in after_table
-    assert f"]({pages}index.html)" in after_table
-    assert "](https://github.com/LTLJH/ask-first-eda/releases/latest)" in after_table
+    for page in ("support_tickets.html", "index.html"):
+        assert f"]({pages}{page})" in opening
+    assert "](https://github.com/LTLJH/ask-first-eda/releases/latest)" in install
 
 
 @pytest.fixture
 def evaluation(readme_text):
-    return re.split(r"^## (?:Evaluation|평가)$", readme_text, flags=re.M)[1].split("\n## ")[0]
+    return re.split(r"^## (?:Evaluation|평가 결과)$", readme_text, flags=re.M)[1].split("\n### ")[0].split("\n## ")[0]
 
 
 def test_readme_evaluation_links_current_and_earlier_results(evaluation):
@@ -103,10 +95,10 @@ def test_readme_evaluation_links_current_and_earlier_results(evaluation):
 def test_readme_evaluation_reports_scores_missed_question_and_cost(evaluation):
     assert "18/24" in evaluation and "24/24" in evaluation
     assert re.search(r"denominator|분모", evaluation, re.I)
-    assert re.search(r"none asked|no condition asked|묻지 않", evaluation, re.I)
+    assert re.search(r"none asked|no condition asked|묻지 않|질문하지 않", evaluation, re.I)
     assert re.search(r"time|시간", evaluation, re.I)
-    assert re.search(r"tokens|토큰", evaluation, re.I)
-    assert re.search(r"twice|2배", evaluation, re.I)
+    assert re.search(r"tokens?|토큰", evaluation, re.I)
+    assert re.search(r"twice|2배|두 배", evaluation, re.I)
 
 
 def test_abc_summary_distinguishes_correct_numbers_from_confirmed_values():

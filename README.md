@@ -1,118 +1,119 @@
 # Ask First EDA
 
-Ask First EDA asks how you define your metrics before it calculates them and builds a report with charts.
+Ask First EDA uses your data file to answer your question in a report with charts.
 
 [Korean](README.ko.md)
 
-| Hour | Machine status | Units produced |
-| --- | --- | ---: |
-| 08:00–09:00 | Running | 18 |
-| 09:00–10:00 | Stopped | 0 |
-| 10:00–11:00 | Running | 22 |
-| 11:00–12:00 | Running | 20 |
+## How it works
 
-[View an example report](https://ltljh.github.io/ask-first-eda/gallery/support_tickets.html) · [Browse the gallery](https://ltljh.github.io/ask-first-eda/gallery/index.html)\
-[Download the ZIP from Releases](https://github.com/LTLJH/ask-first-eda/releases/latest)
+```mermaid
+flowchart LR
+    A["File and question"] --> B["Review the data"] --> C["Calculate metrics"] --> D["Build the report"]
+```
 
-The line produced 60 units. It averaged 15 units/h over the full shift and 20 units/h over the three running hours.
+<details>
+<summary>How the assistant reviews the data and calculates metrics</summary>
 
-> Should I include the stopped hour when I calculate hourly output?
+Python inspects the file. The assistant uses your question and the file to identify which records count toward each metric.
+
+If two definitions give different values, the assistant uses Python to calculate both. It shows both values and asks which definition to use. It asks one question at a time in your language. If you defer the choice, the report shows each value with its definition.
+
+If the data needs cleaning, the assistant asks which rules to apply. It applies the rules you approve to a copy of the data.
+
+The skill creates an HTML report and a JSON summary. Open the **Summary** tab for the results and charts. Open the **Details** tab for the definitions, source rows, and calculations.
+
+</details>
+
+[View an example report](https://ltljh.github.io/ask-first-eda/gallery/support_tickets.html) · [Browse the gallery](https://ltljh.github.io/ask-first-eda/gallery/index.html)
 
 ![Summary tab of an example report](docs/assets/report-preview.png)
 
 ## Install
 
-Requires Python 3.10 or later. In the extracted `ask-first-eda` folder, install dependencies and check the installation:
+[Download the latest release](https://github.com/LTLJH/ask-first-eda/releases/latest). Choose the instructions for your app.
+
+### Codex or Claude Code
+
+1. Extract `ask-first-eda.zip`.
+2. Copy the extracted skill folder to one of the paths below.
+3. Open a terminal in the installed skill folder.
+4. Install the dependencies with Python 3.10 or later.
+5. Run the installation check.
+
+| App | For one project | For all projects |
+| --- | --- | --- |
+| Codex | `<project>/.agents/skills/ask-first-eda/` | `~/.agents/skills/ask-first-eda/` |
+| Claude Code | `<project>/.claude/skills/ask-first-eda/` | `~/.claude/skills/ask-first-eda/` |
+
+Use these commands for steps 4 and 5. On Windows, use the `python` command.
 
 ```sh
 python -m pip install -r requirements.txt
 python -I scripts/check_install.py
 ```
 
+Start Codex or Claude Code from your project folder. The skill creates its work folder there.
+
 ### Claude desktop app
 
-1. Download `ask-first-eda.zip` from the [latest Release](https://github.com/LTLJH/ask-first-eda/releases/latest) and upload it in **Settings → Skills** (or **Customize → Skills** / **Plugins**).
-2. The app may block package installation, so ask Claude to run the uploaded skill’s `scripts/check_install.py` to check available dependencies.
-3. To build the ZIP locally, run `python scripts/package_skill.py` from the repository root and upload `dist/ask-first-eda.zip`.
+1. Open **Settings → Skills**. Some versions list skills under **Customize → Skills** or **Plugins**.
+2. Upload `ask-first-eda.zip`.
+3. Ask Claude to run `scripts/check_install.py` from the uploaded skill. The app may block package installation.
 
-### Claude Code
+To build the ZIP from source, run `python scripts/package_skill.py` from the repository root. Upload `dist/ask-first-eda.zip`.
 
-- Copy the extracted folder to `<project>/.claude/skills/ask-first-eda/` or `~/.claude/skills/ask-first-eda/` (or unpack the Release ZIP there).
-- Open the terminal in the project folder and start Claude Code there, because that is where the work folder is created.
-- Use the project path for a single project and the user path for all projects.
+To update a local installation, replace the installed folder. To uninstall the skill, remove that folder. In the desktop app, upload the new ZIP to update the skill or remove the skill through the app.
 
-### Codex
+## Try the production report example
 
-- Copy the extracted folder to `<project>/.agents/skills/ask-first-eda/` (or unpack the Release ZIP there).
-- Open the terminal in the project folder before starting Codex so the skill is available to that project.
-- Use the project path when the skill should apply only to that project.
+1. Copy [the example workbook](examples/messy_production_report/daily_report.xlsx) into your project.
+2. Start `/ask-first-eda`.
+3. Ask “Show production and utilization by line.”
 
-On Windows, use `python` rather than `python3`; in PowerShell, use `Copy-Item -Recurse .\skills\ask-first-eda <project>\.claude\skills\ask-first-eda` (or the `.agents\skills` path for Codex).
+The assistant inspects the workbook. It asks which hours count toward utilization and which cleaning rules to apply. Open `eda-work/delivery/report.html` to read the results. Use `eda_summary.json` in the same folder to read the results in code.
 
-To update, replace the installed folder or upload the new Release ZIP. To remove it, delete the folder or remove the skill in the app.
+## Supported files
 
-| Client | Version | Date | Verification scope | First run |
-| --- | --- | --- | --- | --- |
-| Claude Code | 2.1.332 | 2026-11-26 | routing 4/4(install smoke) | pass (2026-11-26, clean project, support_tickets example: eda-work/delivery/report.html and eda_summary.json created in the project folder) |
-| Codex | 0.171.0 | 2026-11-26 | routing 4/4(install smoke) | covered by evaluation runs (codex exec) |
-| Claude desktop app | — | 2026-11-26 | upload and run, manual | pass (manual, 2026-11-26) |
+The skill reads CSV, TSV, Excel (`.xlsx`), JSON, JSONL, Parquet, and Markdown tables. It detects older Excel files (`.xls`). The skill does not guarantee that it can read them. Korean chart labels require a system font that supports Hangul.
 
-See the [installation smoke status](evals/install_smoke.json) for the automated results.
+The skill preserves the source file. Its scope excludes model training, model tuning, automatic hypothesis tests, p-values, and claims about causation.
 
-### Try it in one minute
+## Examples
 
-Copy `examples/messy_production_report/daily_report.xlsx` into your project, then invoke `/ask-first-eda` and ask “Show production and utilization by line.”
-
-Expected flow: data at a glance → ask about the utilization denominator → confirm the cleaning plan → report.
-
-## Explore the reports
-
-The skill asks one question at a time in your language. The report’s Summary tab shows the findings and charts. The Details tab gives the evidence and calculations.
-
-[Report gallery](docs/gallery/index.html)
-
-- [Seoul Bike](docs/gallery/seoul_bike.html) · [Walkthrough](docs/walkthroughs/seoul_bike.md)
-- [Factory Utility](docs/gallery/factory_utility.html) · [Walkthrough](docs/walkthroughs/factory_utility.md)
-- [Support Tickets](docs/gallery/support_tickets.html) · [Walkthrough](docs/walkthroughs/support_tickets.md)
-- [Equipment Sensors](docs/gallery/equipment_sensors.html) · [Walkthrough](docs/walkthroughs/equipment_sensors.md)
-- [Messy Production Report](docs/gallery/messy_production_report.html) · [Walkthrough](docs/walkthroughs/messy_production_report.md)
-
-See how the [choice of clock affects first-response compliance](docs/walkthroughs/support_tickets.md#sla-clock-comparison) or how a [cleaning plan accounts for excluded rows](docs/walkthroughs/messy_production_report.md#cleaning).
-
-[System architecture](docs/architecture.md)
-
-## Supported inputs
-
-The gallery includes examples in CSV, Excel, JSONL, and Parquet.
-
-| Input | Support |
+| Example | Report and analysis |
 | --- | --- |
-| CSV / TSV | Inspect and analyze |
-| `.xlsx` | Inspect and analyze |
-| JSON / JSONL | Inspect and analyze |
-| Parquet | Inspect and analyze |
-| Markdown table | Inspect and analyze |
-| `.xls` | Detect; reading support is not promised |
-
-Korean chart labels require a system font that supports Hangul.
-
-## What it will not do
-
-- Model training or tuning
-- Automatic hypothesis testing or p-values
-- Causal claims
-- Modify the source file
+| Support tickets | [Report](docs/gallery/support_tickets.html) · [How the choice of clock affects first-response compliance](docs/walkthroughs/support_tickets.md#sla-clock-comparison) |
+| Production records | [Report](docs/gallery/messy_production_report.html) · [Which rows the cleaning rules exclude](docs/walkthroughs/messy_production_report.md#cleaning) |
+| Equipment sensors | [Report](docs/gallery/equipment_sensors.html) · [Analysis](docs/walkthroughs/equipment_sensors.md) |
+| Factory utility use | [Report](docs/gallery/factory_utility.html) · [Analysis](docs/walkthroughs/factory_utility.md) |
+| Seoul Bike | [Report](docs/gallery/seoul_bike.html) · [Analysis](docs/walkthroughs/seoul_bike.md) |
 
 ## Evaluation
 
-Across 36 runs on six synthetic cases, independent review found 18/24 correct numeric results with no skill (A), 24/24 with a one-line instruction (B), and 24/24 with the skill (C).
-B and C each produced 18/24 confirmed final values. C made no unsupported definition assertions and exposed no home paths.
-No condition asked the required denominator question. C used about twice B’s median analyst time and tokens. [A/B/C results and grading corrections](evals/abc_summary.md)
+An independent review compared 36 runs across six synthetic cases.
 
-Earlier versions are covered in the [A/B summary](evals/ab_summary.md).
+| Condition | Correct numeric results |
+| --- | ---: |
+| A. No skill | 18/24 |
+| B. One-line instruction | 24/24 |
+| C. Ask First EDA | 24/24 |
+
+In conditions B and C, the evidence supported both the value and its definition for 18 of 24 results in each condition. No condition asked the required question about the denominator. In condition C, the assistant made no unsupported claims about metric definitions and exposed no home directory paths. Condition C used about twice the median analyst time and token count of condition B.
+
+[Evaluation results and grading corrections](evals/abc_summary.md) · [Earlier evaluation](evals/ab_summary.md)
+
+### Installation checks
+
+| App | Version tested | Result on November 26, 2026 |
+| --- | --- | --- |
+| Claude Code | 2.1.332 | Passed four routing checks. Created the HTML report and JSON summary in a clean project. |
+| Codex | 0.171.0 | Passed four routing checks. Evaluation runs used `codex exec`. |
+| Claude desktop app | Version unrecorded | Passed a manual upload and run. |
+
+[Installation test results](evals/install_smoke.json) · [System architecture](docs/architecture.md)
 
 ## License
 
-The code is licensed under [MIT](LICENSE). [Example datasets](examples/README.md) retain their own licenses.
+The [MIT license](LICENSE) applies to the code. The [example datasets](examples/README.md) retain their own licenses.
 
-[Contributing](CONTRIBUTING.md)
+[Contribution guide](CONTRIBUTING.md)
