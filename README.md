@@ -1,6 +1,6 @@
 # Ask First EDA
 
-Ask First EDA uses your data file to answer your question in a report with charts.
+When a metric’s definition affects the result, Ask First EDA asks which definition to use. It then uses your answer to calculate the metric and creates a report with charts.
 
 [Korean](README.ko.md)
 

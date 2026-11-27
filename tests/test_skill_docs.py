@@ -66,6 +66,25 @@ def readme_text(request):
     return (ROOT / request.param).read_text(encoding="utf-8")
 
 
+def test_readme_first_paragraph_explains_when_to_ask(readme_text, request):
+    readme = request.node.callspec.params["readme_text"]
+    body = readme_text.partition("\n")[2]
+    first_paragraph = re.split(r"\n[ \t]*\n", body.strip(), maxsplit=1)[0]
+    if readme == "README.ko.md":
+        keywords = ("묻", "기준")
+        sentence_end = r"다\."
+    else:
+        keywords = (r"\bask", r"definition|define")
+        sentence_end = r"\.(?=\s|$)"
+
+    assert len(re.findall(sentence_end, first_paragraph)) <= 2, (
+        "The first paragraph must have at most two sentences"
+    )
+    assert all(re.search(keyword, first_paragraph, re.I) for keyword in keywords), (
+        "The first paragraph must explain that the skill asks when definitions change results"
+    )
+
+
 def test_readme_introduces_workflow_before_install(readme_text):
     opening, install = re.split(r"^## (?:Install|설치)$", readme_text, maxsplit=1, flags=re.M)
     diagram = re.search(r"```mermaid\n(flowchart LR\n.*?)\n```", opening, re.S)

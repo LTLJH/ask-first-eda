@@ -1,6 +1,6 @@
 # Ask First EDA
 
-Ask First EDA는 데이터 파일을 읽고 질문에 대한 답을 차트와 함께 리포트에 담습니다.
+Ask First EDA는 지표의 계산 기준에 따라 결과가 달라지면 어떤 기준을 쓸지 먼저 묻습니다. 확인한 기준으로 지표를 계산하고 차트가 담긴 리포트를 만듭니다.
 
 [English](README.md)
 
