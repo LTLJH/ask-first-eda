@@ -590,6 +590,114 @@ class EvalToolsTests(unittest.TestCase):
         self.assertFalse((self.home / ".cache").exists())
         self.assertEqual(source_auth.read_text(encoding="utf-8"), '{"token":"fake"}')
 
+    def legacy_analyst_prompt(self, condition):
+        prefix = {
+            "noskill": "",
+            "prompted": (
+                "Ask about a business definition only when the request and the file cannot settle a choice "
+                "that changes the result, and keep the evidence for each number.\n"
+            ),
+            "skill": (
+                "An analysis skill is available at ./ask-first-eda/SKILL.md. Read it first and follow it.\n\n"
+            ),
+        }
+        return (
+            "Role: blind-analyst\n\n"
+            f"{prefix[condition]}Use `python3 -I` to run Python with pandas and matplotlib.\n\n"
+            "When the analysis is complete, save an offline HTML report (`report.html`) and a JSON "
+            "file with the calculated metrics (`results.json`) in `delivery/` under the working directory.\n\n"
+            "Opening B\n"
+        )
+
+    def test_runner_dry_run_prompted_rel_extends_prompted_instruction(self):
+        output = self.run_case("prompted_rel", "--dry-run")
+        prompt = output.split("Analyst prompt:\n", 1)[1]
+        instruction = (
+            "In chat, write file locations as paths relative to the working directory, never absolute paths."
+        )
+
+        self.assertRegex(prompt, rf"each number\.\s+{re.escape(instruction)}\nUse `python3 -I`")
+        self.assertEqual(
+            re.sub(rf"(?<=each number\.)\s+{re.escape(instruction)}", "", prompt, count=1),
+            self.legacy_analyst_prompt("prompted"),
+        )
+
+    def test_runner_dry_run_current_keeps_legacy_prompts_and_shows_defaults(self):
+        for condition in ("noskill", "prompted", "skill"):
+            output = self.run_case(condition, "--dry-run")
+            header, prompt = output.split("Analyst prompt:\n", 1)
+            self.assertEqual(prompt, self.legacy_analyst_prompt(condition), condition)
+
+        self.assertRegex(header, r"\bcurrent\b")
+        self.assertIn("gpt-6.2-sol", header)
+        self.assertRegex(header, r"\bmedium\b")
+        for condition in ("noskill", "prompted", "skill"):
+            output = self.run_case(condition, "--dry-run", "--opening-style", "current")
+            self.assertEqual(output.split("Analyst prompt:\n", 1)[1],
+                             self.legacy_analyst_prompt(condition), condition)
+
+    def test_runner_dry_run_conversational_inserts_line_before_delivery(self):
+        output = self.run_case("prompted", "--dry-run", "--opening-style", "conversational")
+        header, prompt = output.split("Analyst prompt:\n", 1)
+        instruction = (
+            "This is a conversation. The user can answer questions before you finish, "
+            "so ask when a choice that changes the result is open."
+        )
+        expected = self.legacy_analyst_prompt("prompted").replace(
+            "\n\nWhen the analysis is complete,",
+            f"\n\n{instruction}\nWhen the analysis is complete,",
+            1,
+        )
+
+        self.assertEqual(prompt, expected)
+        self.assertRegex(header, r"\bconversational\b")
+
+    def test_runner_dry_run_shows_analyst_model_and_effort_overrides(self):
+        output = self.run_case("noskill", "--dry-run", "--analyst-model", "gpt-6.1-sol",
+                               "--analyst-effort", "high")
+        header = output.split("Analyst prompt:\n", 1)[0]
+
+        self.assertIn("gpt-6.1-sol", header)
+        self.assertRegex(header, r"\bhigh\b")
+
+    def assert_analyst_options(self, options, model, effort, opening_style):
+        main = eval_function("run_case.py", "main")
+        namespace = main.__globals__
+        calls = []
+
+        def reply(args, cwd, log, prompt, **kwargs):
+            calls.append(args)
+            return namespace["Reply"]("Done.", "analyst-thread", None, 0)
+
+        with pytest.MonkeyPatch.context() as patch:
+            patch.setitem(namespace, "ROOT", self.repo)
+            patch.setitem(namespace, "call_codex", reply)
+            patch.setenv("HOME", str(self.home))
+            patch.setenv("CODEX_HOME", self.env["CODEX_HOME"])
+            patch.setattr(sys, "argv", ["run_case.py", "--case", "demo", "--flow", "B",
+                                       "--condition", "noskill", "--max-turns", "1",
+                                       "--run-id", "options", *options])
+            main()
+
+        self.assertEqual(len(calls), 1)
+        args = calls[0]
+        self.assertEqual(args[args.index("-m") + 1], model)
+        self.assertEqual(args[args.index("-c") + 1], f'model_reasoning_effort="{effort}"')
+        meta = json.loads((self.run_dir("options") / "meta.json").read_text(encoding="utf-8"))
+        self.assertEqual(meta["models"]["analyst"], model)
+        self.assertEqual(meta["efforts"]["analyst"], effort)
+        self.assertEqual(meta.get("opening_style"), opening_style)
+
+    def test_runner_records_default_analyst_options(self):
+        self.assert_analyst_options([], "gpt-6.2-sol", "medium", "current")
+
+    def test_runner_forwards_and_records_overridden_analyst_options(self):
+        self.assert_analyst_options(
+            ["--analyst-model", "gpt-6.1-sol", "--analyst-effort", "high",
+             "--opening-style", "conversational"],
+            "gpt-6.1-sol", "high", "conversational",
+        )
+
     def test_runner_dry_run_displays_gallery_prior_without_staging(self):
         prior = self.repo / GALLERY_SUMMARY
         prior.parent.mkdir(parents=True)

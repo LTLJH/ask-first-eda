@@ -17,6 +17,11 @@ Each case tests a different decision or data structure. Runs with different inte
 
 ## Running a case
 
+- `--condition prompted_rel` extends `prompted` by asking the analyst to use relative file paths in chat.
+- `--opening-style {current,conversational}` defaults to `current`. The conversational style encourages questions when an unresolved choice affects the result.
+- `--analyst-model` and `--analyst-effort` override `gpt-6.2-sol` and `medium`, respectively.
+- `--dry-run` shows the selected style, analyst model, and effort. Actual runs record them in `meta.json`.
+
 Use `--prior-summary PATH` to stage a `.summary.json` file from `docs/gallery` at `eda-work/delivery/eda_summary.json` inside `work/`.
 
 List input filenames in an `inputs: a.csv, b.xlsx` line above the first flow heading in `case.md`. Without that line, the runner stages only regular files matching `input.*`. Symlinks are rejected.

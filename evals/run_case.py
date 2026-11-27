@@ -31,7 +31,7 @@ PRIVATE_CASE_FILES = {"case.md", "domain_card.md", "expected.json", "expected_fa
 GRADER_FILES = (
     "evals/numeric_check.py", "evals/grade_run.py", "harness/roles/grader.md",
 )
-CONDITIONS = ("noskill", "prompted", "skill")
+CONDITIONS = ("noskill", "prompted", "prompted_rel", "skill")
 PROMPTED_INSTRUCTION = (
     "Ask about a business definition only when the request and the file cannot settle a choice "
     "that changes the result, and keep the evidence for each number."
@@ -432,7 +432,9 @@ def copy_artifacts(work, run, inputs, *, staged_prior=None):
             yield relative.as_posix()
 
 
-def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None, *, prior_summary=None):
+def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None, *,
+             prior_summary=None, opening_style="current", analyst_model=ANALYST_MODEL,
+             analyst_effort=ANALYST_EFFORT):
     start = time.monotonic()
     staged_prior = None
     if prior_summary is not None:
@@ -452,18 +454,32 @@ def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None
     work = cache / "work"
     analyst_prompt = [role("blind-analyst")]
     python_instruction = "Use `python3 -I` to run Python with pandas and matplotlib."
-    if condition == "prompted":
+    if condition == "prompted_rel":
+        python_instruction = (
+            "In chat, write file locations as paths relative to the working directory, never absolute paths.\n"
+            f"{python_instruction}"
+        )
+    if condition in ("prompted", "prompted_rel"):
         python_instruction = f"{PROMPTED_INSTRUCTION}\n{python_instruction}"
     elif condition == "skill":
         analyst_prompt.append("An analysis skill is available at ./ask-first-eda/SKILL.md. Read it first and follow it.")
+    delivery_request = DELIVERY_REQUEST
+    if opening_style == "conversational":
+        delivery_request = (
+            "This is a conversation. The user can answer questions before you finish, "
+            "so ask when a choice that changes the result is open.\n"
+            f"{delivery_request}"
+        )
     analyst_prompt += [
         python_instruction,
-        DELIVERY_REQUEST,
+        delivery_request,
         opening,
     ]
     prompt = "\n\n".join(analyst_prompt)
     if dry_run:
         print(f"Dry run: {case_id} / {flow} / {condition} (max analyst turns: {max_turns})")
+        print(f"Opening style: {opening_style}")
+        print(f"Analyst model: {analyst_model} (effort: {analyst_effort})")
         print(f"Workspace: {work}")
         print("Inputs: " + ", ".join(path.name for path in inputs))
         if condition == "skill":
@@ -503,11 +519,12 @@ def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None
 
     meta = {
         "case": case_id, "flow": flow, "condition": condition,
+        "opening_style": opening_style,
         "input_sha256": input_fingerprints(staged_inputs),
         "skill_sha256": skill_fingerprint(staged_skill) if condition == "skill" else None,
         **reproducibility,
-        "models": {"analyst": ANALYST_MODEL, "simulator": SIMULATOR_MODEL},
-        "efforts": {"analyst": ANALYST_EFFORT, "simulator": SIMULATOR_EFFORT},
+        "models": {"analyst": analyst_model, "simulator": SIMULATOR_MODEL},
+        "efforts": {"analyst": analyst_effort, "simulator": SIMULATOR_EFFORT},
         "turns": 0, "end_reason": "error", "artifacts": [],
     }
     if case_dir is not None:
@@ -516,7 +533,7 @@ def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None
         meta["prior_summary"] = prior_summary.as_posix()
     history = []
     sandbox = "workspace-write"
-    analyst_args = fresh_codex(ANALYST_MODEL, ANALYST_EFFORT, sandbox, work)
+    analyst_args = fresh_codex(analyst_model, analyst_effort, sandbox, work)
     args = analyst_args
     thread_id = None
     card = None
@@ -680,6 +697,9 @@ def main():
     source.add_argument("--case-dir", type=Path, help="Use a case directory outside evals/cases")
     parser.add_argument("--flow", required=True, choices=("A", "B", "C"))
     parser.add_argument("--condition", required=True, choices=CONDITIONS)
+    parser.add_argument("--opening-style", choices=("current", "conversational"), default="current")
+    parser.add_argument("--analyst-model", default=ANALYST_MODEL)
+    parser.add_argument("--analyst-effort", default=ANALYST_EFFORT)
     parser.add_argument("--max-turns", type=int, default=10, help="Maximum analyst turns")
     parser.add_argument("--run-id")
     parser.add_argument("--prior-summary", type=Path, help="Stage a .summary.json file from docs/gallery")
