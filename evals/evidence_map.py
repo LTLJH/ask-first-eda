@@ -13,9 +13,9 @@ from tempfile import TemporaryDirectory, mkdtemp
 
 from numeric_check import (
     CLAUSE_BREAK, CONDITIONAL, DATE_RANGE, DATE_SCOPE, DISPLAY_QUANTITY, FORMULA, NUMBER, SHORT_DAY, UNIT_SUFFIX,
-    DateRange, allows_undated, comparable_fields, compare_metrics, delivery_results_path, display_decimals,
-    last_analyst_text, metric_date, parse_number, parse_period, read_json, report_path, reports_text, summary_path,
-    transcript_metrics, unit_parts,
+    DateRange, allows_undated, comparable_fields, compare_metrics, delivery_evidence, delivery_results_path,
+    display_decimals, last_analyst_text, metric_date, metric_name, parse_number, parse_period, read_json,
+    report_path, reports_text, structured_nonfinal, summary_path, transcript_metrics, unit_parts,
 )
 from run_case import ROOT, call_codex, fresh_codex, json_text, make_role_home, role
 
@@ -301,8 +301,10 @@ def json_claim(data, path, location):
         metric["conditional"] = any(
             CONDITIONAL.search(metric.get(field, "")) for field in ("name", "definition")
         )
-        if location["conditional"] and not metric["conditional"]:
-            raise ValueError("Condition is absent from the structured evidence")
+    if any(structured_nonfinal(context) for context, _ in contexts):
+        metric["conditional"] = True
+    if location["conditional"] and not metric["conditional"]:
+        raise ValueError("Condition is absent from the structured evidence")
 
     if contexts:
         context, tail = contexts[-1]
@@ -311,11 +313,24 @@ def json_claim(data, path, location):
         if isinstance(period, str) and periods == {period}:
             metric.setdefault("period", period)
         unit = location.get("unit")
+        field = tail[0]
         if isinstance(unit, str) and unit.strip() and (
             any(unit == content for content in context.values())
             or any(re.search(rf"(?<![^\W_]){re.escape(unit)}(?![^\W_])", part) for part in parts)
         ):
             metric.setdefault("unit", unit)
+            if re.search(rf"(?<![^\W_]){re.escape(unit)}(?![^\W_])", field):
+                metric["unit"] = unit
+        if isinstance(field_unit := context.get(f"{field}_unit"), str) and field_unit.strip():
+            metric["unit"] = field_unit
+        from numeric_check import UNITS
+
+        percent_aliases = "|".join(
+            re.escape(alias) for alias, (dimension, factor, _) in UNITS.items()
+            if dimension == "ratio" and factor * 100 == 1
+        )
+        if re.search(rf"(?<![^\W_])(?:{percent_aliases})(?![^\W_])", field, re.IGNORECASE):
+            metric["unit"] = "%"
         for field, component in comparable_fields(context).items():
             if field not in ("numerator", "denominator"):
                 continue
@@ -330,6 +345,19 @@ def json_claim(data, path, location):
                     metric[field] = quantity(component)[0]
                 except ValueError:
                     continue
+        if len(tail) == 1:
+            for field in ("numerator", "denominator"):
+                if (component_path := location.get(f"{field}_path")) is None:
+                    continue
+                if not isinstance(component_path, str):
+                    raise ValueError("Expected a JSON component path")
+                sibling = json_path_parts(component_path)
+                if sibling == parts or sibling[:-1] != parts[:-1]:
+                    raise ValueError("Expected a sibling component path")
+                component = context[sibling[-1]]
+                if field in location and not same_raw(component, location[field]):
+                    raise ValueError("Component path does not match raw")
+                metric[field] = quantity(component)[0]
     if (period := metric.get("period")) and "date" not in metric and (parse_period(period) or SHORT_DAY.fullmatch(period)):
         metric["date"] = period
     if percent:
@@ -442,33 +470,50 @@ def verify_location(sources, location):
     return (file, position), (kind, metric)
 
 
-def mapped_result(reference, claims, report, tolerance, dates, allow_undated, sign_agnostic):
-    report_name, report_text = report
-    for kind in ("json", "results_json", "message", "html"):
-        rows = [metric for source, metric in claims if source == kind]
-        if not rows:
-            continue
-        report_metrics = None
-        if report_name and kind != "html":
-            report_rows = [metric for source, metric in claims if source == "html"]
-            report_rows.extend(transcript_metrics(report_text, [reference, *rows], is_report=True))
+def mapped_result(run, reference, claims, sources, tolerance, dates, allow_undated, sign_agnostic):
+    rows = [{**metric, "_mapped_file": file, "_mapped_kind": kind}
+            for artifact_kind in ("json", "results_json", "html")
+            for file, kind, metric in claims if kind == artifact_kind]
+    chat = [metric for _, kind, metric in claims if kind == "message"]
+    report = next(((file, text) for file, (kind, text) in sources.items() if kind == "html"), None)
+    if not rows and chat:
+        # A verified chat label can identify a delivery row for deterministic comparison.
+        aliases = {metric_name(metric) for metric in chat}
+        delivered, _ = delivery_evidence(run, chat)
+        rows = [{**metric, "conditional": structured_nonfinal(metric),
+                 "_mapped_file": "delivery/results.json", "_mapped_kind": "results_json"}
+                for metric in delivered if metric_name(metric) in aliases]
+    chat_only = bool(chat) and all(kind == "message" for kind, _ in sources.values())
+    if chat_only:
+        rows = chat
+    if not rows:
+        return None
 
-            def report_metrics():
-                return report_name, report_rows
+    def report_metrics():
+        file, content = report
+        verified = [row for row in rows if row.get("_mapped_kind") == "html"]
+        return file, verified + transcript_metrics(content, [reference, *rows], is_report=True)
 
-        compared = compare_metrics(
-            [reference], [], rows, tolerance, dates, named_evidence=kind in ("message", "html"),
-            report_source=report_name if kind == "html" else None, report_metrics=report_metrics,
-            sign_agnostic_metrics=sign_agnostic, allow_undated=allow_undated,
-            evidence_source="evidence_map", mapped_evidence=True,
-        )
-        for bucket in ("matched", "mismatched", "unverified"):
-            if compared[bucket]:
-                return bucket, compared[bucket][0]
+    fields = comparable_fields(reference)
+    target = reference if "conditional" in fields else {**reference, "conditional": False}
+    compared = compare_metrics(
+        [target], [], rows, tolerance, dates, named_evidence=chat_only,
+        report_metrics=report_metrics if report else None,
+        sign_agnostic_metrics=sign_agnostic, allow_undated=allow_undated,
+        evidence_source="evidence_map", mapped_evidence=True,
+    )
+    for bucket in ("matched", "mismatched", "unverified"):
+        if compared[bucket]:
+            entry = compared[bucket][0]
+            entry["expected"] = fields
+            if chat_only and bucket == "matched":
+                entry["actual"]["conditional"] = True
+                entry["reason"] = "chat_only"
+            return bucket, entry
     return None
 
 
-def update_numeric(run, numeric, expected_flow, dates, targets, mapping):
+def update_numeric(run, numeric, expected_flow, dates, targets, mapping, *, write_output=True):
     if not mapping:
         return numeric
     result = dict(numeric)
@@ -488,7 +533,6 @@ def update_numeric(run, numeric, expected_flow, dates, targets, mapping):
             for position in verified[identifier]:
                 owners[position].add(identifier)
 
-        report = next(((file, text) for file, (kind, text) in sources.items() if kind == "html"), (None, ""))
         dated_periods = {period for day in dates if (period := parse_period(day))}
         evaluation_days = {period for period in dated_periods
                            if not isinstance(period, DateRange) and period[0] is not None and period[2] is not None}
@@ -502,13 +546,14 @@ def update_numeric(run, numeric, expected_flow, dates, targets, mapping):
         for identifier, reference, previous, item in pending_metrics(numeric, expected_flow):
             if identifier not in verified:
                 continue
-            claims = [claim for position, claim in verified[identifier].items() if len(owners[position]) == 1]
-            outcome = mapped_result(reference, claims, report, tolerance, dates, allow_undated, sign_agnostic)
+            claims = [(file, *claim) for (file, position), claim in verified[identifier].items()
+                      if len(owners[file, position]) == 1]
+            outcome = mapped_result(run, reference, claims, sources, tolerance, dates, allow_undated, sign_agnostic)
             bucket, entry = outcome or ("unverified", {**item, "source": "evidence_map", "reason":
                                         "no_comparable_location" if claims else "no_verified_location"})
             result[previous].remove(item)
             result[bucket].append(entry)
 
-    if result != numeric:
+    if write_output and result != numeric:
         (run / "numeric_check.json").write_text(json_text(result) + "\n", encoding="utf-8")
     return result

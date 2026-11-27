@@ -282,6 +282,117 @@ def test_mapped_summary_and_report_still_check_conflicts(tmp_path, display, buck
         assert "report_conflict" in entry["differences"]
 
 
+def test_mapped_formula_is_not_a_scope_requirement(tmp_path):
+    mapper = load_mapper()
+    summary(tmp_path, x={"value": 37, "unit": "kg"})
+    expected = {"name": "x", "value": 37, "unit": "kg", "formula": "sum(x)"}
+    numeric, flow = baseline(tmp_path, [expected])
+
+    result = update(mapper, tmp_path, numeric, flow, lambda target: response(
+        target, location(37, path="$.x.value")))
+
+    [entry] = result["matched"]
+    assert entry["name"] == "x"
+    assert entry["actual"]["value"] == 37
+
+
+@pytest.mark.parametrize("json_value", [37, 39], ids=["complete-html", "conflicting-json"])
+def test_mapped_complete_artifact_tuple_preserves_value_conflicts(tmp_path, json_value):
+    mapper = load_mapper()
+    delivery = tmp_path / "delivery"
+    delivery.mkdir()
+    write_json(delivery / "results.json", {"observed": {"y": {"value": json_value, "unit": "%"}}})
+    claim = "Observed share: 37% (numerator: 37, denominator: 100)"
+    (delivery / "report.html").write_text(f"<p>{claim}</p>", encoding="utf-8")
+    expected = {"name": "y", "value": 37, "unit": "%", "numerator": 37, "denominator": 100}
+    numeric, flow = baseline(tmp_path, [expected])
+
+    result = update(mapper, tmp_path, numeric, flow, lambda target: response(
+        target, location(json_value, file="delivery/results.json", path="$.observed.y.value"),
+        location("37%", file="delivery/report.html", quote=claim)))
+
+    if json_value == expected["value"]:
+        [entry] = result["matched"]
+        assert entry["source_path"] == "delivery/report.html"
+        assert entry["actual"]["numerator"] == 37
+        assert entry["actual"]["denominator"] == 100
+    else:
+        assert not result["matched"]
+        [entry] = result["mismatched"]
+        claims = entry["differences"]["report_conflict"]["claims"]
+        assert {row["value"] for row in claims} == {37, 39}
+
+
+@pytest.mark.parametrize(("part_key", "base_key", "matches"), [
+    pytest.param("part", "base", True, id="verified-paths"),
+    pytest.param("other_part", "base", False, id="wrong-numerator-path"),
+    pytest.param("part", "other_base", False, id="wrong-denominator-path"),
+])
+def test_mapped_ratio_verifies_explicit_sibling_paths(tmp_path, part_key, base_key, matches):
+    mapper = load_mapper()
+    summary(tmp_path, sample={"y": 37, "unit": "%", "part": 37, "base": 100,
+                              "other_part": 38, "other_base": 101})
+    expected = {"name": "y", "value": 37, "unit": "%", "numerator": 37, "denominator": 100}
+    numeric, flow = baseline(tmp_path, [expected])
+
+    result = update(mapper, tmp_path, numeric, flow, lambda target: response(
+        target, location(37, path="$.sample.y", numerator=37, denominator=100,
+                         numerator_path=f"$.sample.{part_key}", denominator_path=f"$.sample.{base_key}")))
+
+    if matches:
+        [entry] = result["matched"]
+        assert entry["actual"]["numerator"] == 37
+        assert entry["actual"]["denominator"] == 100
+    else:
+        assert not result["matched"]
+
+
+def test_mapped_value_field_unit_takes_precedence_over_object_unit(tmp_path):
+    mapper = load_mapper()
+    summary(tmp_path, sample={"value": 37, "percent": 37, "unit": "원"})
+    numeric, flow = baseline(tmp_path, [
+        {"name": "x", "value": 37, "unit": "원"},
+        {"name": "y", "value": 37, "unit": "%"},
+    ])
+    locations = {
+        "x": location(37, path="$.sample.value", unit="원"),
+        "y": location(37, path="$.sample.percent", unit="percent"),
+    }
+
+    result = update(mapper, tmp_path, numeric, flow,
+                    lambda target: response(target, locations[target["name"]]))
+
+    assert {entry["name"]: entry["actual"]["value"] for entry in result["matched"]} == {"x": 37, "y": 37}
+
+
+@pytest.mark.parametrize("state", [
+    pytest.param({"status": "pending"}, id="pending-status"),
+    pytest.param({"conditional": True}, id="conditional-flag"),
+])
+def test_mapped_structured_nonfinal_state_blocks_match(tmp_path, state):
+    mapper = load_mapper()
+    summary(tmp_path, x={"value": 37, "unit": "kg", **state})
+    numeric, flow = baseline(tmp_path, [{"name": "x", "value": 37, "unit": "kg"}])
+
+    result = update(mapper, tmp_path, numeric, flow, lambda target: response(
+        target, location(37, path="$.x.value")))
+
+    assert not result["matched"]
+
+
+def test_mapped_chat_only_candidate_blocks_final_match(tmp_path):
+    mapper = load_mapper()
+    summary(tmp_path)
+    claim = "Observed mass: 37 kg"
+    transcript(tmp_path, ("analyst", claim))
+    numeric, flow = baseline(tmp_path, [{"name": "x", "value": 37, "unit": "kg"}])
+
+    result = update(mapper, tmp_path, numeric, flow, lambda target: response(
+        target, location("37", file="transcript.jsonl", quote=claim)))
+
+    assert not result["matched"]
+
+
 def test_count_notation_still_checks_report_conflicts(tmp_path):
     mapper = load_mapper()
     summary(tmp_path, observations={"name": "Cycle time", "value": 6, "unit": "s"})
