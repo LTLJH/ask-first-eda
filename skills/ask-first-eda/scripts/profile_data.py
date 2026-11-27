@@ -141,6 +141,68 @@ def unit_summary(name, values):
     }
 
 
+def missing_patterns(frame, refs, columns):
+    # Pattern summaries count the literal NA alongside blanks and nulls.
+    missing = frame.isna() | frame.isin(["", "NA"])
+    counts = missing.sum()
+    incomplete = counts[counts > 0]
+    selected = incomplete.nlargest(50)
+    patterns = {name: {"by_group": [], "by_period": None, "co_missing": []} for name in selected.index}
+    result = {"columns": patterns, "truncated_columns": len(incomplete) - len(selected)}
+    if not patterns:
+        return result
+
+    targets = missing[selected.index]
+    for info in columns:
+        name = info["name"]
+        present = len(frame) - counts[name]
+        if not present:
+            continue
+        labels = frame[name].where(~missing[name])
+        is_date = info["conversion_candidates"]["datetime"] == present
+        if is_date:
+            # ISO values and native dates both start with their local calendar month.
+            labels = labels.astype("string").str.slice(0, 7)
+        elif info["inferred_type"] not in {"string", "boolean"} or not 2 <= labels.nunique() <= 20:
+            continue
+
+        rates_by_target = targets.groupby(labels).mean()
+        if len(rates_by_target) < 2:
+            continue
+        for target, rates in rates_by_target.items():
+            if target == name:
+                continue
+            worst, best = rates.idxmax(), rates.idxmin()
+            high, low = float(rates[worst]), float(rates[best])
+            summary = {"max_rate": high, "min_rate": low, "spread": high - low}
+            if is_date:
+                previous = patterns[target]["by_period"]
+                if previous is None or summary["spread"] > previous["spread"]:
+                    patterns[target]["by_period"] = {
+                        "date_col": name, "worst_period": worst, "best_period": best, **summary,
+                    }
+            else:
+                patterns[target]["by_group"].append({"group_col": name, "worst_group": json_value(worst), **summary})
+
+    source_rows = pd.Series(refs, index=frame.index)
+    for name, pattern in patterns.items():
+        groups = sorted(pattern["by_group"], key=lambda group: group["spread"], reverse=True)[:3]
+        for group in groups:
+            in_group = frame[group["group_col"]].eq(group["worst_group"])
+            group["worst_rows"] = source_rows[targets[name] & in_group].head(10).tolist()
+        pattern["by_group"] = groups
+
+        both = targets.loc[targets[name]].sum().drop(name)
+        both = both[both > 0]
+        union = selected[both.index] + selected[name] - both
+        scores = (both / union).nlargest(3)
+        pattern["co_missing"] = [
+            {"column": other, "both_missing": int(both[other]), "jaccard": score}
+            for other, score in scores.items()
+        ]
+    return result
+
+
 def profile_data(path, **selection):
     table = load_table(path, **selection)
     frame, refs = table.frame, table.row_refs
@@ -186,6 +248,7 @@ def profile_data(path, **selection):
         "irregular_rows": table.details.get("irregular_rows", []),
         "n_rows": len(frame), "n_cols": len(frame.columns), "row_refs": refs, "columns": columns,
         "duplicate_rows": {"count": duplicates, "example_rows": examples}, "key_candidates": key_candidates,
+        "missing_patterns": missing_patterns(frame, refs, columns),
     }
 
 
