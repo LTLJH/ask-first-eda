@@ -353,7 +353,7 @@ class EvalToolsTests(unittest.TestCase):
             for name in ("skills", "plugins", "AGENTS.md"):
                 self.assertFalse((directory / name).exists(), directory / name)
         config = (codex_home / "config.toml").read_text(encoding="utf-8").strip().splitlines()
-        self.assertTrue(not config or (len(config) == 1 and config[0].startswith("#")), config)
+        self.assertEqual(config, ["[skills.bundled]", "enabled = false", "", "[features]", "plugins = false", "apps = false"])
         self.assertEqual(call["auth_mode"], 0o600)
         self.assertFalse((codex_home / "auth.json").exists())
 
@@ -563,6 +563,15 @@ class EvalToolsTests(unittest.TestCase):
         })
         self.assertIs(meta.get("input_modified", False), False)
 
+    def test_runner_records_skills_isolation(self):
+        self.run_case("skill", "--max-turns", "1")
+
+        meta = json.loads((self.run_dir("skill") / "meta.json").read_text(encoding="utf-8"))
+        isolation = meta.get("skills_isolation", {})
+        self.assertEqual(set(isolation), {"bundled_skills", "plugins", "apps"})
+        for key in isolation:
+            self.assertIs(isolation[key], False, key)
+
     def test_runner_flags_input_copy_with_changed_sha256(self):
         original = (self.case / "input.csv").read_bytes()
         self.env["FAKE_MODIFY_INPUT"] = "1"
@@ -589,6 +598,114 @@ class EvalToolsTests(unittest.TestCase):
         self.assertFalse(self.run_dir("skill").exists())
         self.assertFalse((self.home / ".cache").exists())
         self.assertEqual(source_auth.read_text(encoding="utf-8"), '{"token":"fake"}')
+
+    def legacy_analyst_prompt(self, condition):
+        prefix = {
+            "noskill": "",
+            "prompted": (
+                "Ask about a business definition only when the request and the file cannot settle a choice "
+                "that changes the result, and keep the evidence for each number.\n"
+            ),
+            "skill": (
+                "An analysis skill is available at ./ask-first-eda/SKILL.md. Read it first and follow it.\n\n"
+            ),
+        }
+        return (
+            "Role: blind-analyst\n\n"
+            f"{prefix[condition]}Use `python3 -I` to run Python with pandas and matplotlib.\n\n"
+            "When the analysis is complete, save an offline HTML report (`report.html`) and a JSON "
+            "file with the calculated metrics (`results.json`) in `delivery/` under the working directory.\n\n"
+            "Opening B\n"
+        )
+
+    def test_runner_dry_run_prompted_rel_extends_prompted_instruction(self):
+        output = self.run_case("prompted_rel", "--dry-run")
+        prompt = output.split("Analyst prompt:\n", 1)[1]
+        instruction = (
+            "In chat, write file locations as paths relative to the working directory, never absolute paths."
+        )
+
+        self.assertRegex(prompt, rf"each number\.\s+{re.escape(instruction)}\nUse `python3 -I`")
+        self.assertEqual(
+            re.sub(rf"(?<=each number\.)\s+{re.escape(instruction)}", "", prompt, count=1),
+            self.legacy_analyst_prompt("prompted"),
+        )
+
+    def test_runner_dry_run_current_keeps_legacy_prompts_and_shows_defaults(self):
+        for condition in ("noskill", "prompted", "skill"):
+            output = self.run_case(condition, "--dry-run")
+            header, prompt = output.split("Analyst prompt:\n", 1)
+            self.assertEqual(prompt, self.legacy_analyst_prompt(condition), condition)
+
+        self.assertRegex(header, r"\bcurrent\b")
+        self.assertIn("gpt-6.2-sol", header)
+        self.assertRegex(header, r"\bmedium\b")
+        for condition in ("noskill", "prompted", "skill"):
+            output = self.run_case(condition, "--dry-run", "--opening-style", "current")
+            self.assertEqual(output.split("Analyst prompt:\n", 1)[1],
+                             self.legacy_analyst_prompt(condition), condition)
+
+    def test_runner_dry_run_conversational_inserts_line_before_delivery(self):
+        output = self.run_case("prompted", "--dry-run", "--opening-style", "conversational")
+        header, prompt = output.split("Analyst prompt:\n", 1)
+        instruction = (
+            "This is a conversation. The user can answer questions before you finish, "
+            "so ask when a choice that changes the result is open."
+        )
+        expected = self.legacy_analyst_prompt("prompted").replace(
+            "\n\nWhen the analysis is complete,",
+            f"\n\n{instruction}\nWhen the analysis is complete,",
+            1,
+        )
+
+        self.assertEqual(prompt, expected)
+        self.assertRegex(header, r"\bconversational\b")
+
+    def test_runner_dry_run_shows_analyst_model_and_effort_overrides(self):
+        output = self.run_case("noskill", "--dry-run", "--analyst-model", "gpt-6.1-sol",
+                               "--analyst-effort", "high")
+        header = output.split("Analyst prompt:\n", 1)[0]
+
+        self.assertIn("gpt-6.1-sol", header)
+        self.assertRegex(header, r"\bhigh\b")
+
+    def assert_analyst_options(self, options, model, effort, opening_style):
+        main = eval_function("run_case.py", "main")
+        namespace = main.__globals__
+        calls = []
+
+        def reply(args, cwd, log, prompt, **kwargs):
+            calls.append(args)
+            return namespace["Reply"]("Done.", "analyst-thread", None, 0)
+
+        with pytest.MonkeyPatch.context() as patch:
+            patch.setitem(namespace, "ROOT", self.repo)
+            patch.setitem(namespace, "call_codex", reply)
+            patch.setenv("HOME", str(self.home))
+            patch.setenv("CODEX_HOME", self.env["CODEX_HOME"])
+            patch.setattr(sys, "argv", ["run_case.py", "--case", "demo", "--flow", "B",
+                                       "--condition", "noskill", "--max-turns", "1",
+                                       "--run-id", "options", *options])
+            main()
+
+        self.assertEqual(len(calls), 1)
+        args = calls[0]
+        self.assertEqual(args[args.index("-m") + 1], model)
+        self.assertEqual(args[args.index("-c") + 1], f'model_reasoning_effort="{effort}"')
+        meta = json.loads((self.run_dir("options") / "meta.json").read_text(encoding="utf-8"))
+        self.assertEqual(meta["models"]["analyst"], model)
+        self.assertEqual(meta["efforts"]["analyst"], effort)
+        self.assertEqual(meta.get("opening_style"), opening_style)
+
+    def test_runner_records_default_analyst_options(self):
+        self.assert_analyst_options([], "gpt-6.2-sol", "medium", "current")
+
+    def test_runner_forwards_and_records_overridden_analyst_options(self):
+        self.assert_analyst_options(
+            ["--analyst-model", "gpt-6.1-sol", "--analyst-effort", "high",
+             "--opening-style", "conversational"],
+            "gpt-6.1-sol", "high", "conversational",
+        )
 
     def test_runner_dry_run_displays_gallery_prior_without_staging(self):
         prior = self.repo / GALLERY_SUMMARY
@@ -2325,6 +2442,21 @@ def test_make_role_home_rejects_base_inside_repo(tmp_path, monkeypatch):
     assert not base.exists()
 
 
+def test_make_role_home_disables_extra_skills(tmp_path, monkeypatch):
+    make_role_home = eval_function("run_case.py", "make_role_home")
+    monkeypatch.setenv("HOME", str(tmp_path / "source-home"))
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "source-codex"))
+    base = tmp_path / "cache"
+    base.mkdir()
+
+    env = make_role_home(base, "analyst")
+
+    config = Path(env["CODEX_HOME"]) / "config.toml"
+    assert config.read_text(encoding="utf-8").strip() == (
+        "[skills.bundled]\nenabled = false\n\n[features]\nplugins = false\napps = false"
+    )
+
+
 @pytest.mark.parametrize("auth_source", ["configured", "fallback", "missing"])
 def test_make_role_home_copies_auth_when_available(tmp_path, monkeypatch, capsys, auth_source):
     make_role_home = eval_function("run_case.py", "make_role_home")
@@ -2710,6 +2842,57 @@ def test_runner_rejects_invalid_prior_before_creating_folders(
 
     assert not (tmp_path / "repo/evals/runs").exists()
     assert not (tmp_path / "home/.cache").exists()
+
+
+@pytest.fixture
+def prior_summary_reader(tmp_path, monkeypatch):
+    read_prior_summary = runpy.run_path(str(ROOT / "evals/run_case.py"))["read_prior_summary"]
+    monkeypatch.setitem(read_prior_summary.__globals__, "ROOT", tmp_path)
+    return read_prior_summary
+
+
+def test_read_prior_summary_accepts_private_summary(prior_summary_reader, tmp_path):
+    relative = Path("_private/x/prior.summary.json")
+    source = tmp_path / relative
+    source.parent.mkdir(parents=True)
+    content = b'{"datasets": [], "ambiguity_log": []}'
+    source.write_bytes(content)
+
+    assert prior_summary_reader(source) == (relative, content)
+
+
+def test_read_prior_summary_rejects_private_file_with_wrong_suffix(prior_summary_reader, tmp_path):
+    source = tmp_path / "_private/x/prior.json"
+    source.parent.mkdir(parents=True)
+    source.write_text('{"datasets": [], "ambiguity_log": []}', encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        prior_summary_reader(source)
+
+
+def test_read_prior_summary_rejects_private_symlink_path(prior_summary_reader, tmp_path):
+    target = tmp_path / "_private/x/prior.summary.json"
+    target.parent.mkdir(parents=True)
+    target.write_text('{"datasets": [], "ambiguity_log": []}', encoding="utf-8")
+    linked_directory = tmp_path / "_private/linked-directory"
+    linked_directory.symlink_to(target.parent, target_is_directory=True)
+
+    with pytest.raises(ValueError):
+        prior_summary_reader(linked_directory / target.name)
+
+
+@pytest.mark.parametrize("directory", ["docs", "evals"])
+def test_read_prior_summary_rejects_other_locations(prior_summary_reader, tmp_path, directory):
+    source = tmp_path / directory / "prior.summary.json"
+    source.parent.mkdir()
+    source.write_text('{"datasets": [], "ambiguity_log": []}', encoding="utf-8")
+
+    with pytest.raises(ValueError) as error:
+        prior_summary_reader(source)
+
+    message = str(error.value)
+    assert "docs/gallery" in message
+    assert "_private" in message
 
 
 @pytest.mark.parametrize(("reference_changes", "actual_changes"), [

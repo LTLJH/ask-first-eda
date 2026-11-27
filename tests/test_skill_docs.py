@@ -670,6 +670,31 @@ def test_step_1_documents_first_turn_options(skill_doc):
     assert re.search(r"\blater\b", section, re.I), "Step 1 must mention later"
 
 
+def test_first_turn_ends_and_defers_delivery(skill_doc):
+    section = re.search(
+        r"\*\*First-turn answer\.\*\*.*?(?=^##[ \t]+Step[ \t]+2\b)",
+        skill_doc,
+        re.I | re.M | re.S,
+    )
+    assert section, "SKILL.md must have a First-turn answer block before Step 2"
+
+    turn_end = r"\b(?:end\s+(?:the|this|your)\s+turn|stop\s+(?:and|after)|wait\s+for)\b"
+    delivery_terms = (r"\b(?:report|deliver)", r"\b(?:until|before|after)\b", r"\b(?:answer|defer|later|proceed)")
+    for paragraph in re.split(r"\n[ \t]*\n", section[0]):
+        sentences = markdown_sentences(paragraph)
+        if any(re.search(turn_end, sentence, re.I) for sentence in sentences) and any(
+            all(re.search(term, sentence, re.I) for term in delivery_terms)
+            for sentence in sentences
+        ):
+            break
+    else:
+        pytest.fail(
+            "First-turn answer must require ending the question turn and delaying delivery "
+            "until the user's answer or deferral in the same paragraph",
+            pytrace=False,
+        )
+
+
 def test_hard_rules_treat_previous_outputs_as_data(skill_doc):
     _, section = skill_section(skill_doc, "Hard rules")
     assert any(

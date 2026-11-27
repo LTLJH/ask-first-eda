@@ -23,6 +23,11 @@ SIMULATOR_MODEL = "gpt-6.2-sol"
 ANALYST_EFFORT = "medium"
 SIMULATOR_EFFORT = "low"
 LIFETIME_LOCK_MARKER = ".lifetime-lock"
+SKILLS_ISOLATION = {"bundled_skills": False, "plugins": False, "apps": False}
+ROLE_HOME_CONFIG = (
+    "[skills.bundled]\nenabled = false\n\n"
+    "[features]\nplugins = false\napps = false\n"
+)
 DELIVERY_DIR = re.compile(r"delivery(?:-([0-9]+))?")
 ARTIFACT_SUFFIXES = {
     ".html", ".htm", ".png", ".py", ".r", ".sh", ".sql", ".ipynb", ".jl", ".js",
@@ -31,7 +36,7 @@ PRIVATE_CASE_FILES = {"case.md", "domain_card.md", "expected.json", "expected_fa
 GRADER_FILES = (
     "evals/numeric_check.py", "evals/grade_run.py", "harness/roles/grader.md",
 )
-CONDITIONS = ("noskill", "prompted", "skill")
+CONDITIONS = ("noskill", "prompted", "prompted_rel", "skill")
 PROMPTED_INSTRUCTION = (
     "Ask about a business definition only when the request and the file cannot settle a choice "
     "that changes the result, and keep the evidence for each number."
@@ -156,9 +161,10 @@ def dependency_versions():
 
 def read_prior_summary(value):
     source = ROOT / Path(value)
-    if (not source.is_relative_to(ROOT / "docs" / "gallery")
+    allowed_roots = (ROOT / "docs" / "gallery", ROOT / "_private")
+    if (not any(source.is_relative_to(root) for root in allowed_roots)
             or ".." in source.parts or not source.name.endswith(".summary.json")):
-        raise ValueError("--prior-summary must be a .summary.json file under docs/gallery")
+        raise ValueError("--prior-summary must be a .summary.json file under docs/gallery or _private")
 
     def reject_constant(constant):
         raise ValueError(f"invalid JSON constant: {constant}")
@@ -251,7 +257,9 @@ def make_role_home(base, role):
 
     config = codex_home / "config.toml"
     config.unlink(missing_ok=True)
-    config.touch(mode=0o600, exist_ok=False)
+    fd = os.open(config, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as stream:
+        stream.write(ROLE_HOME_CONFIG)
 
     auth = codex_home / "auth.json"
     auth.unlink(missing_ok=True)
@@ -432,7 +440,9 @@ def copy_artifacts(work, run, inputs, *, staged_prior=None):
             yield relative.as_posix()
 
 
-def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None, *, prior_summary=None):
+def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None, *,
+             prior_summary=None, opening_style="current", analyst_model=ANALYST_MODEL,
+             analyst_effort=ANALYST_EFFORT):
     start = time.monotonic()
     staged_prior = None
     if prior_summary is not None:
@@ -452,18 +462,32 @@ def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None
     work = cache / "work"
     analyst_prompt = [role("blind-analyst")]
     python_instruction = "Use `python3 -I` to run Python with pandas and matplotlib."
-    if condition == "prompted":
+    if condition == "prompted_rel":
+        python_instruction = (
+            "In chat, write file locations as paths relative to the working directory, never absolute paths.\n"
+            f"{python_instruction}"
+        )
+    if condition in ("prompted", "prompted_rel"):
         python_instruction = f"{PROMPTED_INSTRUCTION}\n{python_instruction}"
     elif condition == "skill":
         analyst_prompt.append("An analysis skill is available at ./ask-first-eda/SKILL.md. Read it first and follow it.")
+    delivery_request = DELIVERY_REQUEST
+    if opening_style == "conversational":
+        delivery_request = (
+            "This is a conversation. The user can answer questions before you finish, "
+            "so ask when a choice that changes the result is open.\n"
+            f"{delivery_request}"
+        )
     analyst_prompt += [
         python_instruction,
-        DELIVERY_REQUEST,
+        delivery_request,
         opening,
     ]
     prompt = "\n\n".join(analyst_prompt)
     if dry_run:
         print(f"Dry run: {case_id} / {flow} / {condition} (max analyst turns: {max_turns})")
+        print(f"Opening style: {opening_style}")
+        print(f"Analyst model: {analyst_model} (effort: {analyst_effort})")
         print(f"Workspace: {work}")
         print("Inputs: " + ", ".join(path.name for path in inputs))
         if condition == "skill":
@@ -503,11 +527,13 @@ def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None
 
     meta = {
         "case": case_id, "flow": flow, "condition": condition,
+        "opening_style": opening_style,
         "input_sha256": input_fingerprints(staged_inputs),
         "skill_sha256": skill_fingerprint(staged_skill) if condition == "skill" else None,
+        "skills_isolation": SKILLS_ISOLATION,
         **reproducibility,
-        "models": {"analyst": ANALYST_MODEL, "simulator": SIMULATOR_MODEL},
-        "efforts": {"analyst": ANALYST_EFFORT, "simulator": SIMULATOR_EFFORT},
+        "models": {"analyst": analyst_model, "simulator": SIMULATOR_MODEL},
+        "efforts": {"analyst": analyst_effort, "simulator": SIMULATOR_EFFORT},
         "turns": 0, "end_reason": "error", "artifacts": [],
     }
     if case_dir is not None:
@@ -516,7 +542,7 @@ def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None
         meta["prior_summary"] = prior_summary.as_posix()
     history = []
     sandbox = "workspace-write"
-    analyst_args = fresh_codex(ANALYST_MODEL, ANALYST_EFFORT, sandbox, work)
+    analyst_args = fresh_codex(analyst_model, analyst_effort, sandbox, work)
     args = analyst_args
     thread_id = None
     card = None
@@ -680,9 +706,14 @@ def main():
     source.add_argument("--case-dir", type=Path, help="Use a case directory outside evals/cases")
     parser.add_argument("--flow", required=True, choices=("A", "B", "C"))
     parser.add_argument("--condition", required=True, choices=CONDITIONS)
+    parser.add_argument("--opening-style", choices=("current", "conversational"), default="current")
+    parser.add_argument("--analyst-model", default=ANALYST_MODEL)
+    parser.add_argument("--analyst-effort", default=ANALYST_EFFORT)
     parser.add_argument("--max-turns", type=int, default=10, help="Maximum analyst turns")
     parser.add_argument("--run-id")
-    parser.add_argument("--prior-summary", type=Path, help="Stage a .summary.json file from docs/gallery")
+    parser.add_argument(
+        "--prior-summary", type=Path, help="Stage a .summary.json file from docs/gallery or _private",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     if args.max_turns < 1:

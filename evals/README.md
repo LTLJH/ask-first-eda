@@ -17,7 +17,12 @@ Each case tests a different decision or data structure. Runs with different inte
 
 ## Running a case
 
-Use `--prior-summary PATH` to stage a `.summary.json` file from `docs/gallery` at `eda-work/delivery/eda_summary.json` inside `work/`.
+- `--condition prompted_rel` extends `prompted` by asking the analyst to use relative file paths in chat.
+- `--opening-style {current,conversational}` defaults to `current`. The conversational style encourages questions when an unresolved choice affects the result.
+- `--analyst-model` and `--analyst-effort` override `gpt-6.2-sol` and `medium`, respectively.
+- `--dry-run` shows the selected style, analyst model, and effort. Actual runs record them in `meta.json`.
+
+Use `--prior-summary PATH` to stage a `.summary.json` file from `docs/gallery` or `_private` at `eda-work/delivery/eda_summary.json` inside `work/`.
 
 List input filenames in an `inputs: a.csv, b.xlsx` line above the first flow heading in `case.md`. Without that line, the runner stages only regular files matching `input.*`. Symlinks are rejected.
 For reproducibility, `meta.json` records input SHA-256 fingerprints, the Git commit and dirty status, the staged skill hash when used, grader file hashes, and Python and package versions.
@@ -32,6 +37,7 @@ For reproducibility, `meta.json` records input SHA-256 fingerprints, the Git com
 ## Isolation
 
 The analyst, simulator, and grader each use a temporary home outside the repository. When available, a copy of `auth.json` is stored with mode `0600` and deleted when the run ends, even on error. Only the simulator receives the domain card. The analyst's read boundary is checked after the run from recorded events, with no OS-level enforcement. A recorded analyst command accessing an external skill causes grading to fail.
+Each role's Codex configuration disables bundled skills, plugins, and apps. The runner records these settings in `meta.json` under `skills_isolation`.
 
 ## Grading priority
 
