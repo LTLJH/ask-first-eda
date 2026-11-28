@@ -43,7 +43,7 @@ stale_auth = os.environ.get("FAKE_STALE_AUTH")
 with log.open("a") as stream:
     print(json.dumps({"args": args[:-1], "argv": args, "prompt": prompt, "cwd": str(cwd),
                       "home": os.environ["HOME"], "codex_home": str(codex_home),
-                      "path": os.environ["PATH"],
+                      "path": os.environ["PATH"], "zdotdir": os.environ.get("ZDOTDIR"),
                       "auth_mode": S_IMODE(auth.stat().st_mode) if auth.is_file() else None,
                       "stale_auth_exists": Path(stale_auth).exists() if stale_auth else None,
                       "files": sorted(str(p.relative_to(cwd)) for p in cwd.rglob("*"))}),
@@ -367,6 +367,66 @@ class EvalToolsTests(unittest.TestCase):
                            (resume, "analyst"), (last, "simulator")):
             self.assert_role_home(call, "skill", role)
         self.assertEqual(source_auth.read_text(encoding="utf-8"), '{"token":"fake"}')
+
+    def test_runner_sets_zdotdir_only_for_analyst_start_and_resume(self):
+        self.env.pop("ZDOTDIR", None)
+        self.run_case("noskill")
+        (self.case / "expected.json").unlink()
+        self.invoke("run_case.py", "grade-quality", "--run", self.run_dir("noskill"))
+
+        first, simulator, resume, last, grader = self.read_calls()
+        analyst_home = str(self.cache_dir("noskill") / "home-analyst")
+        for call in (simulator, last, grader):
+            self.assertNotEqual(call["zdotdir"], analyst_home)
+        self.assertEqual(
+            {"start": first["zdotdir"], "resume": resume["zdotdir"]},
+            {"start": analyst_home, "resume": analyst_home},
+        )
+
+    def test_runner_writes_login_shell_profiles_only_for_analyst(self):
+        self.run_case("noskill", "--max-turns", 1)
+        (self.case / "expected.json").unlink()
+        self.invoke("run_case.py", "grade-quality", "--run", self.run_dir("noskill"))
+
+        cache = self.cache_dir("noskill")
+        profiles = (".zprofile", ".bash_profile")
+        for role in ("simulator", "grader"):
+            home = cache / f"home-{role}"
+            self.assertTrue(home.is_dir(), home)
+            for profile in profiles:
+                self.assertFalse(os.path.lexists(home / profile), home / profile)
+
+        bin_dir = re.escape(str(cache / "bin"))
+        path_ref = r"\$(?:PATH|\{PATH\})"
+        quoted_bin = rf"""(?:"{bin_dir}"|'{bin_dir}')"""
+        export = rf'export PATH=(?:"{bin_dir}:{path_ref}"|{quoted_bin}:(?:{path_ref}|"{path_ref}"))'
+        for profile in profiles:
+            path = cache / "home-analyst" / profile
+            self.assertTrue(path.is_file(), path)
+            self.assertRegex(path.read_text(encoding="utf-8"), rf"\A{export}\n?\Z")
+
+    def test_analyst_zsh_login_shell_resolves_harness_python3(self):
+        zsh = shutil.which("zsh")
+        if sys.platform == "win32" or zsh is None:
+            self.skipTest("Requires zsh on POSIX")
+        self.run_case("noskill", "--max-turns", 1)
+
+        [analyst] = self.read_calls()
+        cache = self.cache_dir("noskill")
+        self.assertEqual(analyst["home"], str(cache / "home-analyst"))
+        env = dict(self.env, HOME=analyst["home"], PATH=analyst["path"])
+        env.pop("ZDOTDIR", None)
+        result = subprocess.run(
+            [zsh, "-lc", "command -v python3"],
+            cwd=analyst["cwd"], env=env, capture_output=True, text=True, check=True, timeout=15,
+        )
+        self.assertEqual(result.stdout.strip(), str(cache / "bin/python3"))
+
+    def test_runner_records_login_shell_path_fix_in_metadata(self):
+        self.run_case("noskill", "--max-turns", 1)
+
+        meta = json.loads((self.run_dir("noskill") / "meta.json").read_text(encoding="utf-8"))
+        self.assertIs(meta.get("login_shell_path_fix"), True)
 
     def test_runner_removes_role_auth_when_resume_fails(self):
         self.write_source_auth()
