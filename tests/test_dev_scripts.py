@@ -242,3 +242,57 @@ def test_gpt_skill_isolation_reports_foreign_skills(run_gpt, command, codex_exit
     assert call is not None
     assert result.returncode == exit_code, result.stdout + result.stderr
     assert f"FOREIGN_SKILLS={status}" in result.stdout.splitlines()
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="Git is required")
+def test_pre_commit_runs_pytest_in_the_committing_worktree(tmp_path):
+    repo = tmp_path / "repo"
+    worktree = tmp_path / "linked worktree"
+    capture = tmp_path / "pytest-calls.txt"
+    env = {
+        "PATH": os.environ.get("PATH", os.defpath),
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_AUTHOR_NAME": "Fixture",
+        "GIT_AUTHOR_EMAIL": "fixture@example.com",
+        "GIT_COMMITTER_NAME": "Fixture",
+        "GIT_COMMITTER_EMAIL": "fixture@example.com",
+        "FAKE_PYTEST_CALLS": str(capture),
+    }
+
+    def git(*args, cwd=repo):
+        result = subprocess.run(
+            ["git", *args], cwd=cwd, env=env, capture_output=True, text=True, timeout=15,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+    hook = repo / "scripts/hooks/pre-commit"
+    hook.parent.mkdir(parents=True)
+    shutil.copyfile(ROOT / "scripts/hooks/pre-commit", hook)
+    hook.chmod(0o755)
+    git("init", "--template=")
+    git("add", "scripts/hooks/pre-commit")
+    git("commit", "-m", "Add fixture hook")
+    git("worktree", "add", "--detach", str(worktree), "HEAD")
+
+    shared_hook = repo / ".git/hooks/pre-commit"
+    shared_hook.parent.mkdir()
+    shared_hook.symlink_to("../../scripts/hooks/pre-commit")
+    for tree in (repo, worktree):
+        fake_pytest = tree / ".venv/bin/pytest"
+        fake_pytest.parent.mkdir(parents=True)
+        fake_pytest.write_text(
+            '#!/bin/sh\n'
+            'cd "$(dirname "$0")/../.." || exit 1\n'
+            'pwd -P >> "$FAKE_PYTEST_CALLS"\n',
+            encoding="utf-8",
+        )
+        fake_pytest.chmod(0o700)
+
+    git("commit", "--allow-empty", "-m", "Commit in main checkout")
+    assert capture.read_text(encoding="utf-8").splitlines() == [str(repo.resolve())]
+
+    git("commit", "--allow-empty", "-m", "Commit in linked worktree", cwd=worktree)
+    assert capture.read_text(encoding="utf-8").splitlines() == [
+        str(repo.resolve()), str(worktree.resolve()),
+    ]
