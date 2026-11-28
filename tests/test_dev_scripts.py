@@ -279,7 +279,7 @@ def test_pre_commit_runs_pytest_in_the_committing_worktree(tmp_path):
     shared_hook.parent.mkdir()
     shared_hook.symlink_to("../../scripts/hooks/pre-commit")
     for tree in (repo, worktree):
-        fake_pytest = tree / ".venv/bin/pytest"
+        fake_pytest = tree / Path(".venv", "bin", "pytest")
         fake_pytest.parent.mkdir(parents=True)
         fake_pytest.write_text(
             '#!/bin/sh\n'
