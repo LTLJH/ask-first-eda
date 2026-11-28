@@ -43,7 +43,7 @@ stale_auth = os.environ.get("FAKE_STALE_AUTH")
 with log.open("a") as stream:
     print(json.dumps({"args": args[:-1], "argv": args, "prompt": prompt, "cwd": str(cwd),
                       "home": os.environ["HOME"], "codex_home": str(codex_home),
-                      "path": os.environ["PATH"],
+                      "path": os.environ["PATH"], "zdotdir": os.environ.get("ZDOTDIR"),
                       "auth_mode": S_IMODE(auth.stat().st_mode) if auth.is_file() else None,
                       "stale_auth_exists": Path(stale_auth).exists() if stale_auth else None,
                       "files": sorted(str(p.relative_to(cwd)) for p in cwd.rglob("*"))}),
@@ -367,6 +367,21 @@ class EvalToolsTests(unittest.TestCase):
                            (resume, "analyst"), (last, "simulator")):
             self.assert_role_home(call, "skill", role)
         self.assertEqual(source_auth.read_text(encoding="utf-8"), '{"token":"fake"}')
+
+    def test_runner_sets_zdotdir_only_for_analyst_start_and_resume(self):
+        self.env.pop("ZDOTDIR", None)
+        self.run_case("noskill")
+        (self.case / "expected.json").unlink()
+        self.invoke("run_case.py", "grade-quality", "--run", self.run_dir("noskill"))
+
+        first, simulator, resume, last, grader = self.read_calls()
+        analyst_home = str(self.cache_dir("noskill") / "home-analyst")
+        for call in (simulator, last, grader):
+            self.assertNotEqual(call["zdotdir"], analyst_home)
+        self.assertEqual(
+            {"start": first["zdotdir"], "resume": resume["zdotdir"]},
+            {"start": analyst_home, "resume": analyst_home},
+        )
 
     def test_runner_writes_login_shell_profiles_only_for_analyst(self):
         self.run_case("noskill", "--max-turns", 1)

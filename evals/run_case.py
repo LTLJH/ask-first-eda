@@ -550,6 +550,7 @@ def run_case(case_id, flow, condition, max_turns, run_id, dry_run, case_dir=None
         try:
             analyst_env = make_role_home(cache, "analyst")
             analyst_env["PATH"] = analyst_python_path(cache)
+            analyst_env["ZDOTDIR"] = analyst_env["HOME"]
             analyst_home = Path(analyst_env["HOME"])
             quoted_bin = "'" + str(cache / "bin").replace("'", "'\"'\"'") + "'"
             for profile in (".zprofile", ".bash_profile"):

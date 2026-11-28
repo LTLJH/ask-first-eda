@@ -38,7 +38,7 @@ For reproducibility, `meta.json` records input SHA-256 fingerprints, the Git com
 
 The analyst, simulator, and grader each use a temporary home outside the repository. When available, a copy of `auth.json` is stored with mode `0600` and deleted when the run ends, even on error. Only the simulator receives the domain card. The analyst's read boundary is checked after the run from recorded events, with no OS-level enforcement. A recorded analyst command accessing an external skill causes grading to fail.
 Each role's Codex configuration disables bundled skills, plugins, and apps. The runner records these settings in `meta.json` under `skills_isolation`.
-The analyst's `.zprofile` and `.bash_profile` prepend `<cache>/bin` to the login shell's `PATH`. The runner records this setup as `login_shell_path_fix: true` in `meta.json`.
+The analyst's `.zprofile` and `.bash_profile` prepend `<cache>/bin` to the login shell's `PATH`. The runner sets `ZDOTDIR` to the analyst's temporary home for analyst sessions and records this setup as `login_shell_path_fix: true` in `meta.json`.
 
 ## Grading priority
 
