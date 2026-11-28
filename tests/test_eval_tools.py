@@ -368,6 +368,51 @@ class EvalToolsTests(unittest.TestCase):
             self.assert_role_home(call, "skill", role)
         self.assertEqual(source_auth.read_text(encoding="utf-8"), '{"token":"fake"}')
 
+    def test_runner_writes_login_shell_profiles_only_for_analyst(self):
+        self.run_case("noskill", "--max-turns", 1)
+        (self.case / "expected.json").unlink()
+        self.invoke("run_case.py", "grade-quality", "--run", self.run_dir("noskill"))
+
+        cache = self.cache_dir("noskill")
+        profiles = (".zprofile", ".bash_profile")
+        for role in ("simulator", "grader"):
+            home = cache / f"home-{role}"
+            self.assertTrue(home.is_dir(), home)
+            for profile in profiles:
+                self.assertFalse(os.path.lexists(home / profile), home / profile)
+
+        bin_dir = re.escape(str(cache / "bin"))
+        path_ref = r"\$(?:PATH|\{PATH\})"
+        quoted_bin = rf"""(?:"{bin_dir}"|'{bin_dir}')"""
+        export = rf'export PATH=(?:"{bin_dir}:{path_ref}"|{quoted_bin}:(?:{path_ref}|"{path_ref}"))'
+        for profile in profiles:
+            path = cache / "home-analyst" / profile
+            self.assertTrue(path.is_file(), path)
+            self.assertRegex(path.read_text(encoding="utf-8"), rf"\A{export}\n?\Z")
+
+    def test_analyst_zsh_login_shell_resolves_harness_python3(self):
+        zsh = shutil.which("zsh")
+        if sys.platform == "win32" or zsh is None:
+            self.skipTest("Requires zsh on POSIX")
+        self.run_case("noskill", "--max-turns", 1)
+
+        [analyst] = self.read_calls()
+        cache = self.cache_dir("noskill")
+        self.assertEqual(analyst["home"], str(cache / "home-analyst"))
+        env = dict(self.env, HOME=analyst["home"], PATH=analyst["path"])
+        env.pop("ZDOTDIR", None)
+        result = subprocess.run(
+            [zsh, "-lc", "command -v python3"],
+            cwd=analyst["cwd"], env=env, capture_output=True, text=True, check=True, timeout=15,
+        )
+        self.assertEqual(result.stdout.strip(), str(cache / "bin/python3"))
+
+    def test_runner_records_login_shell_path_fix_in_metadata(self):
+        self.run_case("noskill", "--max-turns", 1)
+
+        meta = json.loads((self.run_dir("noskill") / "meta.json").read_text(encoding="utf-8"))
+        self.assertIs(meta.get("login_shell_path_fix"), True)
+
     def test_runner_removes_role_auth_when_resume_fails(self):
         self.write_source_auth()
         self.env["FAKE_FAIL_RESUME"] = "1"
